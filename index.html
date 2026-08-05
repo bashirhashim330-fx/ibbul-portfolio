@@ -1,0 +1,2792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5" />
+<meta name="theme-color" content="#0b5d3b" />
+<meta name="description" content="Official IBBUL Results Checker and CGPA Calculator" />
+<title>IBBUL Results Checker &amp; CGPA Calculator</title>
+<style>
+/* ==========================================================================
+   IBBUL PORTAL v2 — DESIGN TOKENS
+   ========================================================================== */
+:root{
+  --green:#0b5d3b;
+  --green-600:#0e7a4d;
+  --green-700:#08492e;
+  --green-800:#063a26;
+  --green-050:#eaf3ee;
+  --gold:#c8a24a;
+  --gold-soft:#f3e7c9;
+  --ink:#1b2028;
+  --ink-soft:#3b434e;
+  --muted:#6b7480;
+  --line:#e3e7e9;
+  --bg:#f4f6f5;
+  --white:#ffffff;
+  --danger:#b3261e;
+  --warn:#9a6700;
+  --ok:#12704a;
+
+  --glass:rgba(255,255,255,.62);
+  --glass-strong:rgba(255,255,255,.82);
+  --glass-brd:rgba(255,255,255,.55);
+  --glow:0 0 0 1px rgba(11,93,59,.25), 0 0 22px rgba(14,122,77,.35);
+
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:28px;
+  --sh-1:0 1px 2px rgba(16,24,20,.06), 0 2px 10px rgba(16,24,20,.05);
+  --sh-2:0 6px 24px rgba(16,24,20,.10);
+  --sh-3:0 18px 60px rgba(8,32,22,.28);
+
+  --fs:15px;
+  --ff:"Segoe UI Variable","Segoe UI",-apple-system,BlinkMacSystemFont,Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ffm:"Cascadia Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --sidebar-w:280px;
+  --dur:.28s;
+  --ease:cubic-bezier(.2,.85,.25,1);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+html[data-density="compact"]{ --fs:14px; }
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+
+/* ==========================================================================
+   RESET / BASE
+   ========================================================================== */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; max-width:100%; }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+body{
+  font-family:var(--ff); font-size:var(--fs); line-height:1.5; color:var(--ink);
+  background:var(--bg); overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body.locked{ overflow:hidden; }
+img,svg,video{ max-width:100%; display:block; }
+button,input,select,textarea{ font:inherit; color:inherit; max-width:100%; }
+a{ color:var(--green-600); text-underline-offset:2px; }
+h1,h2,h3,h4,h5{ margin:0 0 .35em; line-height:1.22; font-weight:650; letter-spacing:-.01em; overflow-wrap:break-word; }
+p{ margin:0 0 .8em; overflow-wrap:break-word; }
+::selection{ background:var(--gold-soft); }
+:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; border-radius:6px; }
+
+*::-webkit-scrollbar{ width:10px; height:10px; }
+*::-webkit-scrollbar-thumb{ background:#c7cfca; border-radius:20px; border:3px solid transparent; background-clip:content-box; }
+*::-webkit-scrollbar-thumb:hover{ background:#a9b3ad; background-clip:content-box; }
+
+.sr{ position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.mono{ font-family:var(--ffm); }
+.center{ text-align:center; }
+.mb0{ margin-bottom:0 !important; }
+.mt1{ margin-top:1rem; }
+.hint{ font-size:.82em; color:var(--muted); }
+.err{ color:var(--danger); font-size:.85em; margin-top:.35rem; min-height:1.15em; }
+.spread{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; }
+.nowrap{ white-space:nowrap; }
+
+/* ==========================================================================
+   ICONS (inline Lucide SVG — injected by JS)
+   ========================================================================== */
+.ico{
+  width:1.15em; height:1.15em; flex:0 0 auto; display:inline-block;
+  stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;
+  vertical-align:-.18em; pointer-events:none;
+}
+.ico.lg{ width:1.45em; height:1.45em; }
+.ico.xl{ width:1.9em; height:1.9em; }
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.btn{
+  --bg:var(--green); --fg:#fff; --bd:transparent;
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  min-height:46px; padding:.62rem 1.1rem; border-radius:999px;
+  background:var(--bg); color:var(--fg); border:1px solid var(--bd);
+  font-weight:600; cursor:pointer; text-decoration:none; line-height:1.2;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur), background var(--dur), opacity var(--dur), color var(--dur);
+  box-shadow:var(--sh-1); -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.btn:hover{ transform:translateY(-1px); box-shadow:var(--sh-2); }
+.btn:active{ transform:translateY(0) scale(.97); }
+.btn[disabled],.btn[aria-disabled="true"]{ opacity:.55; pointer-events:none; }
+.btn.gold{ --bg:var(--gold); --fg:#231c07; }
+.btn.ghost{ --bg:#fff; --fg:var(--ink); --bd:var(--line); box-shadow:none; }
+.btn.ghost:hover{ --bg:#f7faf8; box-shadow:var(--sh-1); }
+.btn.danger{ --bg:var(--danger); }
+.btn.ghost.danger{ --bg:#fff; --fg:var(--danger); --bd:#f0cdc9; }
+.btn.ghost.danger:hover{ --bg:#fdf3f2; }
+.btn.glass{
+  --bg:rgba(255,255,255,.16); --fg:#fff; --bd:rgba(255,255,255,.36);
+  backdrop-filter:blur(16px) saturate(160%); -webkit-backdrop-filter:blur(16px) saturate(160%);
+}
+.btn.glass:hover{ --bg:rgba(255,255,255,.26); }
+.btn.sm{ min-height:36px; padding:.34rem .85rem; font-size:.86em; }
+.btn.block{ width:100%; }
+.btn-row{ display:flex; flex-wrap:wrap; gap:.55rem; }
+@media (max-width:560px){
+  .btn-row > .btn{ flex:1 1 46%; }
+  .btn-row > .btn.block{ flex:1 1 100%; }
+}
+@media (max-width:380px){
+  .btn-row > .btn{ flex:1 1 100%; }
+}
+
+/* Liquid-glass Back button (used on every major page) */
+.backbtn{
+  display:inline-flex; align-items:center; gap:.5rem;
+  min-height:42px; padding:.45rem 1rem .45rem .8rem; border-radius:999px;
+  background:linear-gradient(135deg, rgba(255,255,255,.86), rgba(255,255,255,.62));
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:0 6px 18px rgba(11,93,59,.13), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%);
+  color:var(--green-700); font-weight:650; cursor:pointer; margin-bottom:.85rem;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur), background var(--dur), gap var(--dur);
+  -webkit-tap-highlight-color:transparent;
+}
+.backbtn:hover{
+  transform:translateY(-2px); gap:.7rem;
+  background:linear-gradient(135deg, rgba(255,255,255,.95), rgba(234,243,238,.8));
+  box-shadow:0 10px 26px rgba(11,93,59,.2), inset 0 1px 0 rgba(255,255,255,1);
+}
+.backbtn:active{ transform:translateY(0) scale(.97); }
+.backbtn .ico{ transition:transform var(--dur) var(--ease); }
+.backbtn:hover .ico{ transform:translateX(-3px); }
+.backbtn.on-dark{
+  background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.35); color:#fff;
+  box-shadow:0 6px 20px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.backbtn.on-dark:hover{ background:rgba(255,255,255,.24); }
+
+/* ==========================================================================
+   FORMS
+   ========================================================================== */
+.field{ margin-bottom:.95rem; min-width:0; }
+.field > label{
+  display:block; font-size:.8em; font-weight:700; letter-spacing:.045em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:.35rem;
+}
+.input{
+  width:100%; min-height:46px; padding:.62rem .85rem; border-radius:var(--r-sm);
+  border:1px solid var(--line); background:#fff; color:var(--ink); outline:none;
+  transition:border-color var(--dur), box-shadow var(--dur), background var(--dur);
+  font-size:max(16px, 1em); /* prevents iOS zoom-on-focus */
+}
+select.input{ appearance:none; -webkit-appearance:none; padding-right:2.2rem;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7480' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right .75rem center; }
+textarea.input{ min-height:96px; resize:vertical; }
+.input:focus{ border-color:var(--green-600); box-shadow:0 0 0 3px rgba(14,122,77,.16); }
+.input::placeholder{ color:#9aa3ab; }
+.input[readonly]{ background:#f6f8f7; color:var(--ink-soft); }
+.on-glass .input{ background:rgba(255,255,255,.88); border-color:rgba(255,255,255,.7); }
+input[type="file"].input{ padding:.5rem .6rem; }
+.check{ display:inline-flex; align-items:center; gap:.55rem; cursor:pointer; user-select:none; font-size:.92em; min-height:36px; }
+.check input{ width:19px; height:19px; accent-color:var(--green); flex:0 0 auto; }
+.pwrap{ position:relative; }
+.pwrap .input{ padding-right:3.3rem; }
+.eye{
+  position:absolute; right:.3rem; top:50%; transform:translateY(-50%);
+  width:42px; height:42px; border:none; background:transparent; border-radius:50%;
+  cursor:pointer; display:grid; place-items:center; color:var(--muted);
+}
+.eye:hover{ background:rgba(0,0,0,.06); color:var(--ink); }
+
+/* ==========================================================================
+   SURFACES / LAYOUT
+   ========================================================================== */
+.card{
+  background:#fff; border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--sh-1); padding:1.15rem; min-width:0;
+}
+@media (max-width:480px){ .card{ padding:.95rem; border-radius:var(--r-md); } }
+.card-h{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; flex-wrap:wrap; margin-bottom:.85rem; }
+.card-h h3{ margin:0; font-size:1.02rem; }
+.glass{
+  background:var(--glass); border:1px solid var(--glass-brd); border-radius:var(--r-xl);
+  backdrop-filter:blur(28px) saturate(170%); -webkit-backdrop-filter:blur(28px) saturate(170%);
+  box-shadow:var(--sh-3);
+}
+.grid{ display:grid; gap:1rem; min-width:0; }
+.g-2,.g-3{ grid-template-columns:1fr; }
+.g-4{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media (min-width:640px){ .g-2,.g-3{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:1024px){ .g-3{ grid-template-columns:repeat(3,minmax(0,1fr)); } .g-4{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width:380px){ .g-4{ grid-template-columns:1fr; } }
+
+.pill{
+  display:inline-flex; align-items:center; gap:.35rem; padding:.24rem .66rem; border-radius:999px;
+  font-size:.78em; font-weight:650; background:var(--green-050); color:var(--green-700);
+  border:1px solid #d3e5da; white-space:nowrap;
+}
+.pill.gold{ background:var(--gold-soft); color:#6b5312; border-color:#e6d3a4; }
+.pill.grey{ background:#eef1f0; color:var(--ink-soft); border-color:var(--line); }
+.pill.red{ background:#fbeceb; color:var(--danger); border-color:#f3cfcc; }
+.empty{ text-align:center; padding:2.2rem 1rem; color:var(--muted); }
+
+.notice{
+  display:flex; gap:.65rem; padding:.75rem .9rem; border-radius:var(--r-sm);
+  background:#fff8e6; border:1px solid #eddcb0; color:#6d5312; font-size:.88em; margin-bottom:1rem;
+  align-items:flex-start;
+}
+.notice .ico{ margin-top:.12em; }
+.notice.red{ background:#fbeceb; border-color:#f0cdc9; color:#8c211a; }
+.notice.info{ background:var(--green-050); border-color:#cfe4d8; color:var(--green-700); }
+
+/* ==========================================================================
+   TABLES (desktop grid → mobile cards)
+   ========================================================================== */
+.tablewrap{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:var(--r-md); border:1px solid var(--line); background:#fff; }
+table{ width:100%; border-collapse:collapse; background:#fff; }
+th,td{ padding:.72rem .8rem; text-align:left; border-bottom:1px solid var(--line); font-size:.93em; vertical-align:middle; }
+th{ background:var(--green-050); color:var(--green-700); font-weight:700; font-size:.76em; text-transform:uppercase; letter-spacing:.05em; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover{ background:#fafcfb; }
+td.num,th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+tfoot td,tfoot th{ background:#f2f6f4; font-weight:700; }
+
+@media (max-width:680px){
+  .tablewrap{ border:none; border-radius:0; overflow:visible; }
+  table.rt{ min-width:0; background:transparent; }
+  table.rt thead{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  table.rt tbody,table.rt tfoot,table.rt tr,table.rt td{ display:block; width:100%; }
+  table.rt tr{
+    border:1px solid var(--line); border-radius:var(--r-md); background:#fff;
+    margin-bottom:.6rem; padding:.35rem .15rem; box-shadow:var(--sh-1);
+  }
+  table.rt tr:hover{ background:#fff; }
+  table.rt td{
+    border:none; display:flex; align-items:center; justify-content:space-between;
+    gap:1rem; padding:.42rem .85rem; text-align:right; font-size:.9em;
+  }
+  table.rt td::before{
+    content:attr(data-l); font-weight:700; font-size:.7rem; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--muted); text-align:left; flex:0 0 auto;
+  }
+  table.rt td[data-l=""]::before{ content:none; }
+  table.rt td.full{ display:block; text-align:left; }
+  table.rt td.full::before{ display:block; margin-bottom:.2rem; }
+  table.rt tfoot tr{ background:var(--green-050); border-color:#cfe4d8; }
+  table.rt .btn-row{ justify-content:flex-end; }
+}
+
+/* ==========================================================================
+   MODAL SYSTEM (fully centered, scroll-safe, never clipped)
+   ========================================================================== */
+.modal-root{ position:fixed; inset:0; z-index:400; display:none; }
+.modal-root.on{ display:block; }
+.modal-scrim{
+  position:absolute; inset:0; background:rgba(6,18,13,.58);
+  backdrop-filter:blur(10px) saturate(140%); -webkit-backdrop-filter:blur(10px) saturate(140%);
+  animation:mFade .24s ease both;
+}
+.modal-shell{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  padding:calc(12px + var(--safe-t)) 12px calc(12px + var(--safe-b));
+  overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+}
+.modal{
+  position:relative; width:min(640px,100%); margin:auto;
+  max-height:calc(100dvh - 24px - var(--safe-t) - var(--safe-b));
+  display:flex; flex-direction:column; background:#fff;
+  border:1px solid rgba(255,255,255,.7); border-radius:var(--r-xl);
+  box-shadow:var(--sh-3); overflow:hidden;
+  animation:mPop .3s var(--ease) both;
+}
+.modal.wide{ width:min(880px,100%); }
+@supports not (height:100dvh){ .modal{ max-height:calc(100vh - 24px); } }
+.modal-h{
+  display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+  padding:1rem 1.15rem; border-bottom:1px solid var(--line); background:#fff; flex:0 0 auto;
+}
+.modal-h h3{ margin:0; font-size:1.05rem; display:flex; align-items:center; gap:.5rem; min-width:0; }
+.modal-h h3 span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.modal-b{ padding:1.15rem; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; flex:1 1 auto; }
+.modal-f{
+  padding:.9rem 1.15rem calc(.9rem + var(--safe-b)); border-top:1px solid var(--line);
+  display:flex; gap:.55rem; justify-content:flex-end; flex-wrap:wrap; background:#fbfcfb; flex:0 0 auto;
+}
+@media (max-width:560px){
+  .modal{ width:100%; border-radius:var(--r-lg); }
+  .modal-f{ justify-content:stretch; }
+  .modal-f .btn{ flex:1 1 46%; }
+  .modal-b{ padding:1rem; }
+}
+.x{
+  width:38px; height:38px; flex:0 0 auto; border-radius:50%; border:1px solid var(--line);
+  background:#f3f6f4; cursor:pointer; display:grid; place-items:center; color:var(--ink-soft);
+  transition:background var(--dur), transform var(--dur), color var(--dur);
+}
+.x:hover{ background:#e6ebe8; color:var(--ink); transform:rotate(90deg); }
+@keyframes mFade{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes mPop{ from{ opacity:0; transform:translateY(16px) scale(.96); } to{ opacity:1; transform:none; } }
+
+/* ==========================================================================
+   TOASTS
+   ========================================================================== */
+.toasts{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:calc(1rem + var(--safe-b)); z-index:500;
+  display:flex; flex-direction:column; gap:.5rem; width:min(440px,calc(100vw - 24px));
+  pointer-events:none;
+}
+.toast{
+  display:flex; gap:.6rem; align-items:flex-start; padding:.78rem .95rem; border-radius:14px;
+  background:rgba(23,32,27,.95); color:#fff; box-shadow:var(--sh-3); font-size:.9rem;
+  animation:mPop .26s var(--ease) both; pointer-events:auto;
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+}
+.toast.ok{ background:rgba(10,86,57,.96); }
+.toast.err{ background:rgba(140,33,26,.96); }
+.toast.warn{ background:rgba(122,90,12,.96); }
+.toast .ico{ margin-top:.1em; }
+
+/* ==========================================================================
+   SCREENS
+   ========================================================================== */
+.screen{ display:none; }
+.screen.active{ display:block; animation:sIn .42s ease both; }
+@keyframes sIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+/* ---------- LANDING ---------- */
+.hero{
+  position:relative; min-height:100svh; display:grid; place-items:center;
+  background:#06231a url('landing.jpg') center/cover no-repeat;
+  padding:2rem 1.15rem calc(2.4rem + var(--safe-b));
+}
+.hero::before{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(4,26,18,.80) 0%, rgba(4,26,18,.62) 45%, rgba(4,26,18,.88) 100%);
+}
+.hero-inner{ position:relative; width:min(940px,100%); text-align:center; color:#fff; animation:hIn .8s var(--ease) both; }
+@keyframes hIn{ from{ opacity:0; transform:translateY(18px) scale(.985); } to{ opacity:1; transform:none; } }
+.crest{
+  width:clamp(74px,17vw,96px); aspect-ratio:1; margin:0 auto 1.1rem; border-radius:50%;
+  background:rgba(255,255,255,.94); display:grid; place-items:center; overflow:hidden;
+  border:2px solid rgba(255,255,255,.65); box-shadow:0 12px 40px rgba(0,0,0,.45);
+}
+.crest img{ width:78%; height:78%; object-fit:contain; }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:.45rem; padding:.36rem .95rem; border-radius:999px;
+  background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.3);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; font-weight:700; color:var(--gold-soft);
+}
+.hero h1{
+  margin:1rem 0 .55rem; font-size:clamp(1.6rem,6vw,3.6rem); font-weight:730; letter-spacing:-.02em;
+  text-shadow:0 3px 26px rgba(0,0,0,.5); text-wrap:balance;
+}
+.hero .sub{ font-size:clamp(.98rem,2.6vw,1.4rem); color:#e8efe9; margin-bottom:.35rem; font-weight:550; }
+.hero .sub b{ color:var(--gold); font-weight:700; }
+.hero .lede{ max-width:620px; margin:.5rem auto 1.7rem; color:#c9d6cd; font-size:clamp(.88rem,2.2vw,1rem); }
+.hero-cta{ display:flex; gap:.7rem; justify-content:center; flex-wrap:wrap; }
+.hero-cta .btn{ min-height:52px; padding:.8rem 1.7rem; font-size:1rem; }
+@media (max-width:420px){ .hero-cta .btn{ width:100%; } }
+.hero-stats{ margin-top:2.3rem; display:grid; grid-template-columns:repeat(2,1fr); gap:.65rem; max-width:680px; margin-inline:auto; }
+@media (min-width:640px){ .hero-stats{ grid-template-columns:repeat(4,1fr); } }
+.hero-stat{
+  padding:.85rem .55rem; border-radius:var(--r-md); text-align:center;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.20);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+}
+.hero-stat b{ display:block; font-size:1.25rem; color:#fff; }
+.hero-stat span{ font-size:.7rem; letter-spacing:.09em; text-transform:uppercase; color:#bcd0c2; }
+.hero-foot{ position:absolute; left:0; right:0; bottom:calc(.6rem + var(--safe-b)); text-align:center; color:rgba(255,255,255,.6); font-size:.74rem; padding:0 1rem; }
+
+/* ---------- LOGIN ---------- */
+.login-bg{
+  position:relative; min-height:100svh; background:#06231a url('log.jpg') center/cover no-repeat;
+  display:flex; align-items:center;
+  padding:calc(5.4rem + var(--safe-t)) 1.15rem calc(2.2rem + var(--safe-b));
+}
+.login-bg::before{ content:""; position:absolute; inset:0; background:linear-gradient(120deg, rgba(4,24,17,.92), rgba(4,24,17,.6) 55%, rgba(4,24,17,.88)); }
+.login-top{
+  position:absolute; top:0; left:0; right:0; z-index:4; display:flex; align-items:center;
+  justify-content:space-between; gap:.6rem; padding:calc(.8rem + var(--safe-t)) 1rem .8rem; color:#fff;
+}
+.login-top .brandline{ display:flex; align-items:center; gap:.6rem; font-weight:650; font-size:.9rem; min-width:0; }
+.login-top .brandline img{ width:36px; height:36px; object-fit:contain; background:#fff; border-radius:50%; padding:3px; flex:0 0 auto; }
+.login-top .brandline span{ display:none; }
+@media (min-width:560px){ .login-top .brandline span{ display:inline; } }
+.login-grid{ position:relative; z-index:2; width:min(1160px,100%); margin:0 auto; display:grid; gap:1.6rem; align-items:center; grid-template-columns:1fr; }
+@media (min-width:980px){ .login-grid{ grid-template-columns:1.05fr .95fr; gap:2.6rem; } }
+.login-left{ color:#fff; text-align:center; }
+@media (min-width:980px){ .login-left{ text-align:left; } .login-left .crest{ margin-inline:0; } .login-left p{ margin-inline:0; } .trust{ justify-content:flex-start; } }
+.login-left .crest{ width:84px; margin-inline:auto; }
+.login-left h2{ font-size:clamp(1.35rem,3.6vw,2.35rem); margin-top:.9rem; text-shadow:0 2px 18px rgba(0,0,0,.45); text-wrap:balance; }
+.login-left .motto{ color:var(--gold); font-weight:650; letter-spacing:.04em; }
+.login-left p{ color:#cbd8ce; max-width:470px; margin-inline:auto; font-size:.94rem; }
+.trust{ display:flex; gap:.45rem; flex-wrap:wrap; justify-content:center; margin-top:1rem; }
+.trust span{ display:inline-flex; align-items:center; gap:.35rem; font-size:.74rem; padding:.32rem .72rem; border-radius:999px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); color:#dbe6de; }
+.login-card{ padding:1.4rem 1.15rem; }
+@media (min-width:520px){ .login-card{ padding:2rem 1.9rem; } }
+.login-card h3{ font-size:clamp(1.2rem,3.4vw,1.4rem); }
+.login-card .kicker{ color:var(--green-700); font-weight:700; font-size:.72rem; letter-spacing:.16em; text-transform:uppercase; }
+.tabbar{ display:flex; gap:.3rem; padding:.28rem; border-radius:999px; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.62); margin:.9rem 0 1.2rem; }
+.tabbar button{
+  flex:1; min-height:42px; border:none; background:transparent; border-radius:999px;
+  font-weight:650; cursor:pointer; color:var(--ink-soft); transition:all var(--dur) var(--ease);
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem; font-size:.92em;
+}
+.tabbar button.on{ background:var(--green); color:#fff; box-shadow:var(--sh-1); }
+.row-between{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+.linkbtn{ background:none; border:none; padding:.2rem 0; color:var(--green-600); font-weight:650; cursor:pointer; text-decoration:underline; }
+.demo-hint{
+  margin-top:1rem; font-size:.8rem; color:var(--ink-soft); background:rgba(255,255,255,.6);
+  border:1px dashed rgba(11,93,59,.3); border-radius:var(--r-sm); padding:.65rem .8rem; overflow-wrap:anywhere;
+}
+.demo-hint b{ color:var(--green-700); }
+
+
+/* ==========================================================================
+   TOKEN CORRECTION + APP SHELL
+   ========================================================================== */
+:root{ --green-800:#063a26; }
+
+.app{ min-height:100svh; display:flex; flex-direction:column; background:var(--bg); }
+.topbar{
+  position:sticky; top:0; z-index:120; display:flex; align-items:center; gap:.55rem;
+  padding:.55rem .75rem; padding-top:calc(.55rem + var(--safe-t));
+  background:rgba(255,255,255,.84);
+  backdrop-filter:blur(22px) saturate(180%); -webkit-backdrop-filter:blur(22px) saturate(180%);
+  border-bottom:1px solid var(--line);
+}
+.topbar.admin{ background:rgba(8,38,27,.93); border-bottom-color:rgba(255,255,255,.12); color:#fff; }
+.iconbtn{
+  width:44px; height:44px; flex:0 0 auto; display:grid; place-items:center;
+  border-radius:13px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--ink);
+  transition:background var(--dur), transform var(--dur) var(--ease), box-shadow var(--dur);
+  -webkit-tap-highlight-color:transparent;
+}
+.iconbtn:hover{ transform:translateY(-1px); box-shadow:var(--sh-1); }
+.iconbtn:active{ transform:scale(.93); }
+.topbar.admin .iconbtn{ background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.22); color:#fff; }
+.topbar.admin .iconbtn:hover{ background:rgba(255,255,255,.18); }
+.brand{ display:flex; align-items:center; gap:.55rem; min-width:0; }
+.brand img{ width:36px; height:36px; object-fit:contain; border-radius:50%; background:#fff; padding:2px; flex:0 0 auto; }
+.brand b{ display:block; font-size:.92rem; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.brand small{ font-size:.68rem; color:var(--muted); letter-spacing:.07em; text-transform:uppercase; }
+.topbar.admin .brand small{ color:#9fbfae; }
+@media (max-width:400px){ .brand b{ max-width:120px; } }
+.top-space{ margin-left:auto; }
+.bell{ position:relative; }
+.bell .dot{
+  position:absolute; top:4px; right:4px; min-width:18px; height:18px; padding:0 4px;
+  border-radius:999px; background:var(--danger); color:#fff; font-size:.62rem; font-weight:700;
+  display:grid; place-items:center; border:2px solid #fff; line-height:1;
+}
+.topbar.admin .bell .dot{ border-color:#0b3b2a; }
+.avatar{
+  width:40px; height:40px; border-radius:50%; object-fit:cover; flex:0 0 auto;
+  border:2px solid var(--gold); background:#e9edea; cursor:pointer;
+  transition:transform var(--dur) var(--ease);
+}
+.avatar:hover{ transform:scale(1.06); }
+
+.main{ flex:1; width:100%; max-width:1220px; margin:0 auto; padding:1rem .8rem calc(6.5rem + var(--safe-b)); min-width:0; }
+@media (min-width:768px){ .main{ padding:1.4rem 1.3rem calc(7rem + var(--safe-b)); } }
+.page-title{ display:flex; align-items:flex-end; justify-content:space-between; gap:.8rem; flex-wrap:wrap; margin-bottom:1rem; }
+.page-title h2{ font-size:clamp(1.2rem,3.4vw,1.75rem); margin:0; }
+.page-title p{ margin:.15rem 0 0; color:var(--muted); font-size:.9em; }
+
+/* ==========================================================================
+   SIDEBAR — Apple visionOS liquid glass + green active glow
+   ========================================================================== */
+.scrim{
+  position:fixed; inset:0; background:rgba(6,20,14,.46); z-index:290;
+  backdrop-filter:blur(6px) saturate(120%); -webkit-backdrop-filter:blur(6px) saturate(120%);
+  opacity:0; pointer-events:none; transition:opacity .32s var(--ease);
+}
+.scrim.on{ opacity:1; pointer-events:auto; }
+.sidebar{
+  position:fixed; top:0; bottom:0; left:0; width:var(--sidebar-w); max-width:88vw; z-index:300;
+  transform:translateX(-104%); will-change:transform, opacity; opacity:.6;
+  transition:transform .42s var(--ease), opacity .32s ease;
+  background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(240,247,243,.86));
+  backdrop-filter:blur(38px) saturate(200%); -webkit-backdrop-filter:blur(38px) saturate(200%);
+  border-right:1px solid rgba(255,255,255,.72);
+  box-shadow:26px 0 70px rgba(6,26,18,.26), inset -1px 0 0 rgba(255,255,255,.55);
+  display:flex; flex-direction:column; padding-top:var(--safe-t);
+  overscroll-behavior:contain;
+}
+.sidebar.open{ transform:translateX(0); opacity:1; }
+.sidebar.admin{
+  background:linear-gradient(160deg, rgba(9,44,31,.93), rgba(5,28,19,.9));
+  color:#eaf3ee; border-right-color:rgba(255,255,255,.12);
+  box-shadow:26px 0 70px rgba(0,0,0,.45), inset -1px 0 0 rgba(255,255,255,.09);
+}
+.side-head{ padding:1.05rem 1.05rem .85rem; display:flex; align-items:center; gap:.7rem; border-bottom:1px solid rgba(11,93,59,.1); }
+.sidebar.admin .side-head{ border-bottom-color:rgba(255,255,255,.12); }
+.side-head img{ width:44px; height:44px; border-radius:50%; object-fit:contain; background:#fff; padding:3px; flex:0 0 auto; }
+.side-head b{ font-size:.92rem; display:block; }
+.side-head small{ font-size:.71rem; color:var(--muted); letter-spacing:.05em; }
+.sidebar.admin .side-head small{ color:#9fbfae; }
+.side-close{ margin-left:auto; width:36px; height:36px; border-radius:50%; border:1px solid rgba(11,93,59,.15); background:rgba(255,255,255,.7); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); }
+.sidebar.admin .side-close{ background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.18); color:#eaf3ee; }
+.side-close:hover{ transform:rotate(90deg); }
+.side-close{ transition:transform var(--dur) var(--ease), background var(--dur); }
+.side-profile{ display:flex; gap:.75rem; align-items:center; padding:.9rem 1.05rem; border-bottom:1px solid rgba(11,93,59,.1); }
+.side-profile img{ width:48px; height:48px; border-radius:15px; object-fit:cover; border:2px solid var(--gold); flex:0 0 auto; background:#fff; }
+.side-profile b{ display:block; font-size:.9rem; line-height:1.2; }
+.side-profile small{ color:var(--muted); font-size:.75rem; font-family:var(--ffm); }
+.side-nav{ flex:1; overflow-y:auto; overscroll-behavior:contain; padding:.65rem .6rem 1.4rem; -webkit-overflow-scrolling:touch; }
+.side-sec{ font-size:.66rem; letter-spacing:.17em; text-transform:uppercase; color:var(--muted); padding:.9rem .65rem .35rem; font-weight:750; }
+.sidebar.admin .side-sec{ color:#8fae9e; }
+.nav-item{
+  position:relative; display:flex; align-items:center; gap:.8rem; width:100%; text-align:left;
+  padding:.72rem .8rem; margin-bottom:.22rem; border:1px solid transparent; background:transparent;
+  border-radius:14px; cursor:pointer; font-weight:600; color:var(--ink-soft); font-size:.94rem;
+  transition:background var(--dur), color var(--dur), transform var(--dur) var(--ease), box-shadow var(--dur), border-color var(--dur);
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-item .ico{ width:1.25em; height:1.25em; }
+.nav-item:hover{ background:rgba(11,93,59,.08); color:var(--green-700); transform:translateX(3px); }
+.nav-item.on{
+  background:linear-gradient(135deg, var(--green), var(--green-600));
+  color:#fff; border-color:rgba(255,255,255,.35);
+  box-shadow:0 8px 22px rgba(11,93,59,.36), 0 0 0 1px rgba(11,93,59,.2), 0 0 26px rgba(14,122,77,.45);
+}
+.nav-item.on::before{
+  content:""; position:absolute; left:-.6rem; top:50%; transform:translateY(-50%);
+  width:4px; height:58%; border-radius:0 4px 4px 0; background:var(--gold);
+  box-shadow:0 0 14px rgba(200,162,74,.9);
+}
+.sidebar.admin .nav-item{ color:#cfe0d6; }
+.sidebar.admin .nav-item:hover{ background:rgba(255,255,255,.09); color:#fff; }
+.sidebar.admin .nav-item.on{
+  background:linear-gradient(135deg, var(--gold), #b8912f); color:#241c06;
+  box-shadow:0 8px 22px rgba(200,162,74,.3), 0 0 26px rgba(200,162,74,.35);
+}
+.sidebar.admin .nav-item.on::before{ background:#fff; box-shadow:0 0 14px rgba(255,255,255,.8); }
+.nav-item .tag{ margin-left:auto; font-size:.66rem; background:var(--danger); color:#fff; border-radius:999px; padding:.08rem .45rem; font-weight:700; }
+.nav-item.on .tag{ background:rgba(255,255,255,.28); }
+.side-foot{ padding:.85rem 1.05rem calc(1.1rem + var(--safe-b)); border-top:1px solid rgba(11,93,59,.1); font-size:.72rem; color:var(--muted); line-height:1.5; }
+.sidebar.admin .side-foot{ border-top-color:rgba(255,255,255,.12); color:#8fae9e; }
+
+/* ==========================================================================
+   PROFILE STRIP / TILES / BARS
+   ========================================================================== */
+.profile-strip{
+  position:relative; overflow:hidden; border-radius:var(--r-xl); color:#fff; margin-bottom:1.1rem;
+  background:linear-gradient(135deg, var(--green-800), var(--green) 55%, var(--green-600));
+  box-shadow:var(--sh-2); padding:1.15rem;
+}
+.profile-strip::after{
+  content:""; position:absolute; right:-70px; top:-90px; width:280px; height:280px; border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(200,162,74,.5), rgba(200,162,74,0) 65%); pointer-events:none;
+}
+.ps-top{ position:relative; display:flex; gap:.95rem; align-items:center; flex-wrap:wrap; }
+.ps-top img{
+  width:clamp(66px,18vw,80px); aspect-ratio:1; border-radius:18px; object-fit:cover; flex:0 0 auto;
+  border:3px solid var(--gold); box-shadow:0 8px 24px rgba(0,0,0,.3); background:#fff;
+}
+.ps-id{ min-width:0; }
+.ps-id h3{ margin:0; font-size:clamp(1.02rem,3.2vw,1.24rem); }
+.ps-id .mat{ font-family:var(--ffm); color:var(--gold-soft); letter-spacing:.03em; font-size:.86rem; }
+.ps-meta{ display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
+.ps-meta span{ display:inline-flex; align-items:center; gap:.32rem; font-size:.73rem; padding:.24rem .62rem; border-radius:999px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.22); }
+.ps-stats{ position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; margin-top:1.1rem; }
+@media (min-width:760px){ .ps-stats{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.ps-stat{
+  background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.2); border-radius:var(--r-md);
+  padding:.7rem .8rem; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); min-width:0;
+}
+.ps-stat small{ display:block; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:#c6dccd; }
+.ps-stat b{ font-size:1.32rem; font-variant-numeric:tabular-nums; }
+.ps-stat b.sm{ font-size:.95rem; line-height:1.35; display:block; }
+
+.tile{ background:#fff; border:1px solid var(--line); border-radius:var(--r-lg); padding:.95rem; box-shadow:var(--sh-1); min-width:0; }
+.tile .ic{ width:40px; height:40px; border-radius:13px; display:grid; place-items:center; background:var(--green-050); color:var(--green-700); margin-bottom:.6rem; }
+.tile.gold .ic{ background:var(--gold-soft); color:#6b5312; }
+.tile b{ font-size:clamp(1.2rem,4vw,1.5rem); display:block; font-variant-numeric:tabular-nums; line-height:1.15; }
+.tile small{ color:var(--muted); font-size:.75rem; letter-spacing:.045em; text-transform:uppercase; font-weight:650; display:block; }
+.tile .delta{ font-size:.76rem; margin-top:.3rem; font-weight:650; display:flex; align-items:center; gap:.25rem; }
+.delta.up{ color:var(--ok); } .delta.dn{ color:var(--danger); } .delta.flat{ color:var(--muted); }
+
+.bar{ height:9px; border-radius:999px; background:#eaeeec; overflow:hidden; }
+.bar > i{ display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--green),var(--green-600)); transition:width .6s var(--ease); }
+.bar.gold > i{ background:linear-gradient(90deg,#b8912f,var(--gold)); }
+
+.chartbox{ position:relative; width:100%; min-width:0; }
+.chartbox canvas{ width:100%; display:block; }
+.legend{ display:flex; gap:.7rem; flex-wrap:wrap; margin-top:.7rem; font-size:.8em; color:var(--ink-soft); }
+.legend i{ width:11px; height:11px; border-radius:3px; display:inline-block; margin-right:.3rem; }
+
+.timeline{ list-style:none; margin:0; padding:0; }
+.timeline li{ display:flex; gap:.75rem; padding:.72rem 0; border-bottom:1px dashed var(--line); align-items:flex-start; flex-wrap:wrap; }
+.timeline li:last-child{ border-bottom:none; }
+.timeline .tico{ width:36px; height:36px; flex:0 0 36px; border-radius:12px; display:grid; place-items:center; background:var(--green-050); color:var(--green-700); }
+.timeline .tico.gold{ background:var(--gold-soft); color:#6b5312; }
+.timeline .tico.red{ background:#fbeceb; color:var(--danger); }
+.timeline .tbody{ flex:1 1 200px; min-width:0; }
+.timeline b{ display:block; font-size:.92rem; }
+.timeline small{ color:var(--muted); font-size:.76rem; }
+.timeline p{ margin:.18rem 0 0; font-size:.87rem; color:var(--ink-soft); }
+.unread{ background:#f6fbf8; border-left:3px solid var(--green); padding-left:.65rem; border-radius:0 10px 10px 0; }
+
+.gradepill{ display:inline-grid; place-items:center; width:31px; height:31px; border-radius:10px; font-weight:750; font-size:.88rem; }
+.gA{ background:#e2f3ea; color:#0c6b45; } .gB{ background:#e6f0fb; color:#17518c; }
+.gC{ background:#fdf3dd; color:#7a5b12; } .gD{ background:#fdeddc; color:#8a4a10; }
+.gE{ background:#fbe6e2; color:#9c3d1e; } .gF{ background:#fadedb; color:#a11a10; }
+
+.toolbar{ display:flex; gap:.6rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1rem; }
+.toolbar .field{ margin:0; flex:1 1 168px; min-width:0; }
+.toolbar .btn{ flex:0 1 auto; }
+@media (max-width:520px){ .toolbar .field{ flex:1 1 100%; } .toolbar .btn{ flex:1 1 100%; } }
+
+.thumb{ width:44px; height:44px; border-radius:12px; object-fit:cover; border:2px solid var(--gold); background:#eef2f0; flex:0 0 auto; }
+.thumb.lg{ width:120px; height:140px; border-radius:14px; border-width:3px; border-color:var(--green); }
+.avatar-fallback{
+  display:grid; place-items:center; background:linear-gradient(135deg,var(--green),var(--green-600));
+  color:#fff; font-weight:750; letter-spacing:.02em;
+}
+
+/* ==========================================================================
+   AI ASSISTANT — panel + floating liquid-glass launcher
+   ========================================================================== */
+.chat{ display:flex; flex-direction:column; height:min(68svh,600px); min-height:380px; border:1px solid var(--line); border-radius:var(--r-lg); background:#fff; overflow:hidden; box-shadow:var(--sh-1); }
+.chat-head{ display:flex; align-items:center; gap:.65rem; padding:.75rem .9rem; background:linear-gradient(135deg,var(--green-800),var(--green)); color:#fff; flex:0 0 auto; }
+.chat-head .avatar-ai{ width:40px; height:40px; border-radius:13px; background:var(--gold); color:#241c06; display:grid; place-items:center; flex:0 0 auto; }
+.chat-head b{ display:block; font-size:.94rem; }
+.chat-head small{ font-size:.73rem; color:#bfd6c8; }
+.chat-head .live{ margin-left:auto; display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; color:#bfd6c8; }
+.chat-head .live i{ width:8px; height:8px; border-radius:50%; background:#5fd39b; box-shadow:0 0 10px #5fd39b; animation:pulse 1.8s infinite; }
+@keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+.chat-body{ flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain; padding:1rem .85rem; background:linear-gradient(180deg,#f7faf8,#fff); display:flex; flex-direction:column; gap:.6rem; -webkit-overflow-scrolling:touch; }
+.msg{ max-width:88%; padding:.68rem .9rem; border-radius:17px; font-size:.92rem; animation:mPop .22s both; overflow-wrap:anywhere; }
+.msg.bot{ align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:6px; box-shadow:var(--sh-1); }
+.msg.me{ align-self:flex-end; background:var(--green); color:#fff; border-bottom-right-radius:6px; }
+.msg .t{ display:block; font-size:.67rem; opacity:.62; margin-top:.3rem; }
+.typing{ display:inline-flex; gap:5px; align-items:center; padding:.15rem 0; }
+.typing i{ width:7px; height:7px; border-radius:50%; background:var(--muted); animation:bounce 1.15s infinite; }
+.typing i:nth-child(2){ animation-delay:.16s; } .typing i:nth-child(3){ animation-delay:.32s; }
+@keyframes bounce{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-5px); opacity:1; } }
+.chips{ display:flex; gap:.4rem; overflow-x:auto; padding:.62rem .85rem; border-top:1px solid var(--line); background:#fff; flex:0 0 auto; scrollbar-width:none; }
+.chips::-webkit-scrollbar{ display:none; }
+.chips button{ white-space:nowrap; border:1px solid var(--line); background:#f7faf8; border-radius:999px; padding:.42rem .85rem; font-size:.82rem; cursor:pointer; font-weight:600; color:var(--green-700); transition:background var(--dur), transform var(--dur); }
+.chips button:hover{ background:var(--green-050); transform:translateY(-1px); }
+.chat-in{ display:flex; gap:.5rem; padding:.65rem .7rem; border-top:1px solid var(--line); background:#fff; flex:0 0 auto; }
+.chat-in .input{ min-height:46px; border-radius:999px; }
+.chat-in .btn{ flex:0 0 auto; width:46px; padding:0; }
+
+.fab{
+  position:fixed; right:max(14px, env(safe-area-inset-right)); bottom:calc(16px + var(--safe-b)); z-index:250;
+  width:60px; height:60px; border-radius:50%; cursor:pointer; display:none;
+  place-items:center; color:#fff; border:1px solid rgba(255,255,255,.42);
+  background:linear-gradient(140deg, rgba(14,122,77,.92), rgba(11,93,59,.96));
+  backdrop-filter:blur(22px) saturate(190%); -webkit-backdrop-filter:blur(22px) saturate(190%);
+  box-shadow:0 12px 34px rgba(8,60,38,.42), inset 0 1px 0 rgba(255,255,255,.4), 0 0 0 0 rgba(14,122,77,.55);
+  animation:fabGlow 2.8s ease-in-out infinite;
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur);
+  -webkit-tap-highlight-color:transparent;
+}
+.fab.show{ display:grid; }
+.fab:hover{ transform:translateY(-3px) scale(1.05); }
+.fab:active{ transform:scale(.94); }
+.fab.hide-me{ display:none !important; }
+@keyframes fabGlow{
+  0%,100%{ box-shadow:0 12px 34px rgba(8,60,38,.42), inset 0 1px 0 rgba(255,255,255,.4), 0 0 0 0 rgba(14,122,77,.5); }
+  50%{ box-shadow:0 12px 34px rgba(8,60,38,.42), inset 0 1px 0 rgba(255,255,255,.4), 0 0 0 14px rgba(14,122,77,0); }
+}
+.fab .ico{ width:26px; height:26px; }
+.fab-label{
+  position:absolute; right:70px; top:50%; transform:translateY(-50%) translateX(6px);
+  background:rgba(23,32,27,.92); color:#fff; font-size:.76rem; font-weight:600;
+  padding:.35rem .7rem; border-radius:999px; white-space:nowrap; opacity:0; pointer-events:none;
+  transition:opacity var(--dur), transform var(--dur) var(--ease);
+}
+.fab:hover .fab-label{ opacity:1; transform:translateY(-50%) translateX(0); }
+@media (max-width:560px){ .fab{ width:56px; height:56px; } .fab-label{ display:none; } }
+
+/* ==========================================================================
+   CALCULATOR / VERIFY
+   ========================================================================== */
+.calc-row{ display:grid; grid-template-columns:1fr; gap:.5rem; padding:.65rem; border:1px solid var(--line); border-radius:var(--r-md); margin-bottom:.55rem; background:#fbfcfb; }
+@media (min-width:660px){ .calc-row{ grid-template-columns:2.2fr .85fr .95fr 46px; align-items:center; } }
+.calc-row .input{ min-height:44px; }
+.rm{ width:46px; height:44px; border-radius:12px; border:1px solid #f0cdc9; background:#fdf1f0; color:var(--danger); cursor:pointer; display:grid; place-items:center; justify-self:stretch; }
+@media (min-width:660px){ .rm{ justify-self:end; width:46px; } }
+.rm:hover{ background:#fbe4e2; }
+.calc-summary{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+@media (min-width:820px){ .calc-summary{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+.verify-wrap{ min-height:100svh; display:grid; place-items:center; padding:calc(1.5rem + var(--safe-t)) 1rem calc(1.5rem + var(--safe-b)); background:linear-gradient(160deg,#062b1e,#0b5d3b 60%,#083a26); }
+.verify-card{ width:min(560px,100%); background:#fff; border-radius:var(--r-xl); box-shadow:var(--sh-3); overflow:hidden; animation:mPop .5s var(--ease) both; }
+.verify-head{ padding:1.4rem 1.1rem; text-align:center; background:linear-gradient(135deg,var(--green-800),var(--green)); color:#fff; }
+.verify-head img{ width:72px; height:72px; margin:0 auto .6rem; background:#fff; border-radius:50%; padding:6px; object-fit:contain; }
+.verify-head h3{ font-size:clamp(1rem,3.4vw,1.2rem); }
+.seal{ display:inline-flex; align-items:center; gap:.45rem; margin-top:.65rem; padding:.38rem 1rem; border-radius:999px; background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.36); font-weight:700; letter-spacing:.04em; font-size:.84rem; }
+.seal.bad{ background:rgba(179,38,30,.92); border-color:rgba(255,255,255,.3); }
+.verify-body{ padding:1.15rem; }
+.kv{ display:flex; justify-content:space-between; gap:1rem; padding:.6rem 0; border-bottom:1px dashed var(--line); font-size:.93rem; }
+.kv:last-of-type{ border-bottom:none; }
+.kv span{ color:var(--muted); flex:0 0 auto; }
+.kv b{ text-align:right; overflow-wrap:anywhere; }
+
+/* ==========================================================================
+   TRANSCRIPT / PRINT
+   ========================================================================== */
+#printRoot{ display:none; }
+.doc{ width:210mm; max-width:100%; margin:0 auto; background:#fff; color:#000; padding:12mm; position:relative; font-size:11.5px; }
+.doc::before{ content:""; position:absolute; inset:0; background:url('logo.png') center/58% no-repeat; opacity:.055; pointer-events:none; }
+.doc-head{ display:flex; gap:12px; align-items:center; border-bottom:3px double var(--green); padding-bottom:8px; }
+.doc-head img.crestimg{ width:74px; height:74px; object-fit:contain; }
+.doc-head .ttl{ flex:1; text-align:center; }
+.doc-head .ttl h1{ font-size:16px; margin:0; letter-spacing:.05em; color:var(--green-700); text-transform:uppercase; }
+.doc-head .ttl p{ margin:1px 0; font-size:10.5px; }
+.doc-head .ttl .band{ display:inline-block; margin-top:4px; background:var(--green); color:#fff; padding:2px 12px; border-radius:3px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; }
+.doc-head .pp{ width:74px; height:88px; object-fit:cover; border:1.5px solid var(--green); }
+.doc-bio{ display:grid; grid-template-columns:repeat(2,1fr); gap:2px 18px; margin:10px 0; font-size:11px; }
+.doc-bio div{ display:flex; gap:6px; border-bottom:1px dotted #bbb; padding:2.5px 0; }
+.doc-bio span{ min-width:104px; color:#444; text-transform:uppercase; font-size:9.5px; letter-spacing:.04em; padding-top:1px; }
+.doc-bio b{ flex:1; }
+.doc h4.sec{ background:var(--green-050); border-left:4px solid var(--gold); padding:4px 8px; margin:10px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--green-700); }
+table.doc-t{ width:100%; border-collapse:collapse; }
+table.doc-t th,table.doc-t td{ border:1px solid #9aa; padding:3.5px 6px; font-size:10.5px; }
+table.doc-t th{ background:var(--green); color:#fff; text-transform:uppercase; letter-spacing:.05em; font-size:9.5px; }
+table.doc-t tfoot td{ font-weight:700; background:#f2f6f4; }
+.doc-sum{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:9px 0; }
+.doc-sum div{ border:1px solid #9aa; padding:5px 7px; }
+.doc-sum small{ display:block; font-size:8.6px; text-transform:uppercase; letter-spacing:.07em; color:#444; }
+.doc-sum b{ font-size:13px; }
+.doc-foot{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; align-items:end; margin-top:14px; }
+.sigline{ text-align:center; }
+.sigline .sign{ font-family:"Segoe Script","Brush Script MT",cursive; font-size:19px; color:#12326e; margin-bottom:-4px; }
+.sigline hr{ border:none; border-top:1px solid #333; margin:2px 0 3px; }
+.sigline small{ font-size:9px; text-transform:uppercase; letter-spacing:.07em; }
+.stamp{ justify-self:center; width:96px; height:96px; border-radius:50%; border:2.5px solid var(--danger); color:var(--danger); display:grid; place-items:center; text-align:center; font-size:7.6px; font-weight:800; text-transform:uppercase; line-height:1.25; transform:rotate(-13deg); opacity:.86; padding:6px; }
+.stamp b{ display:block; font-size:9.5px; letter-spacing:.05em; }
+.qrbox{ text-align:center; }
+.qrbox canvas{ width:88px; height:88px; margin:0 auto; display:block; image-rendering:pixelated; }
+.qrbox small{ font-size:7.6px; display:block; margin-top:2px; }
+.doc-note{ margin-top:10px; border-top:1px solid #ccc; padding-top:5px; font-size:8.6px; color:#444; overflow-wrap:anywhere; }
+
+@media print{
+  @page{ size:A4 portrait; margin:8mm; }
+  html,body{ background:#fff !important; }
+  body > *{ display:none !important; }
+  #printRoot{ display:block !important; }
+  .doc{ width:auto; padding:0; }
+  .no-print{ display:none !important; }
+}
+
+/* ==========================================================================
+   FINAL RESPONSIVE AUDIT
+   ========================================================================== */
+@media (max-width:360px){
+  :root{ --fs:14px; }
+  .ps-stat b{ font-size:1.15rem; }
+  .tile{ padding:.8rem; }
+}
+@media (min-width:1400px){ .main{ max-width:1320px; } }
+@media (orientation:landscape) and (max-height:520px){
+  .chat{ height:78svh; min-height:300px; }
+  .modal{ max-height:calc(100dvh - 16px); }
+}
+</style>
+</head>
+<body>
+<!-- ====================== LANDING ====================== -->
+<section id="screen-landing" class="screen active" aria-label="Landing page">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="crest"><img src="logo.png" alt="IBBUL crest" /></div>
+      <span class="eyebrow"><span class="i" data-i="shield-check"></span> Official Student Portal</span>
+      <h1>Welcome to Ibrahim Badamasi Babangida University Lapai</h1>
+      <p class="sub">IBBUL <b>Results Checker</b> &amp; CGPA Calculator</p>
+      <p class="lede">Check your semester results, track academic progress, compute your GPA and CGPA, and print a QR-verifiable university transcript — all in one secure place.</p>
+      <div class="hero-cta">
+        <button class="btn gold" id="goProceed">Proceed <span class="i" data-i="arrow-right"></span></button>
+        <button class="btn glass" id="goAdminFromHero"><span class="i" data-i="shield"></span> Administrator Access</button>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><b id="hsStudents">10</b><span>Students</span></div>
+        <div class="hero-stat"><b id="hsCourses">24</b><span>Courses</span></div>
+        <div class="hero-stat"><b>2</b><span>Sessions</span></div>
+        <div class="hero-stat"><b>5.00</b><span>Grade Scale</span></div>
+      </div>
+    </div>
+    <div class="hero-foot">Faculty of Natural Sciences · Department of Computer Science · Lapai, Niger State</div>
+  </div>
+</section>
+
+<!-- ====================== LOGIN ====================== -->
+<section id="screen-login" class="screen" aria-label="Login page">
+  <div class="login-bg">
+    <div class="login-top">
+      <div class="brandline"><img src="logo.png" alt="" /><span>IBBUL Student Portal</span></div>
+      <button class="btn glass sm" id="btnAdminMode"><span class="i" data-i="shield"></span> <span id="adminModeLabel">Continue as Admin</span></button>
+    </div>
+    <div class="login-grid">
+      <div class="login-left">
+        <div class="crest"><img src="logo.png" alt="IBBUL crest" /></div>
+        <h2>Ibrahim Badamasi Babangida University, Lapai</h2>
+        <p class="motto">Knowledge · Integrity · Service</p>
+        <p>The official IBBUL results checking platform. Sign in with your matriculation number to view approved semester results, monitor your CGPA in real time, and download a QR-verifiable statement of result.</p>
+        <div class="trust">
+          <span><span class="i" data-i="lock"></span> Encrypted Session</span>
+          <span><span class="i" data-i="qr-code"></span> QR Verified Results</span>
+          <span><span class="i" data-i="award"></span> Senate Approved</span>
+        </div>
+      </div>
+      <div class="glass login-card on-glass">
+        <div id="loginNotice"></div>
+        <span class="kicker" id="loginKicker">Student Access</span>
+        <h3 id="loginTitle">Sign in to your portal</h3>
+        <p class="hint" id="loginSubtitle">Use the credentials issued by the Directorate of ICT.</p>
+        <div class="tabbar" role="tablist">
+          <button id="tabStudent" class="on" role="tab" aria-selected="true"><span class="i" data-i="graduation-cap"></span> Student</button>
+          <button id="tabAdmin" role="tab" aria-selected="false"><span class="i" data-i="shield"></span> Administrator</button>
+        </div>
+        <form id="loginForm" autocomplete="off" novalidate>
+          <div class="field">
+            <label id="lblUser" for="fUser">Matric Number</label>
+            <input class="input" id="fUser" placeholder="U25/FPY/CSC/1100" autocapitalize="characters" spellcheck="false" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="fPass">Password</label>
+            <div class="pwrap">
+              <input class="input" id="fPass" type="password" placeholder="Enter your password" autocomplete="current-password" />
+              <button type="button" class="eye" id="fEye" aria-label="Show password"><span class="i" data-i="eye"></span></button>
+            </div>
+          </div>
+          <label class="check" style="margin-bottom:.75rem"><input type="checkbox" id="fShow" /> Show password</label>
+          <div class="row-between">
+            <label class="check"><input type="checkbox" id="fRemember" /> Remember me</label>
+            <button type="button" class="linkbtn" id="fForgot">Forgot password?</button>
+          </div>
+          <div class="err" id="loginErr" role="alert"></div>
+          <button class="btn block" type="submit" id="btnLogin"><span class="i" data-i="log-in"></span> Login</button>
+        </form>
+        <div class="demo-hint" id="demoHint"></div>
+        <p class="hint center" style="margin:.9rem 0 0">
+          <button class="linkbtn" id="backHome" type="button">← Back to home page</button>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================== STUDENT APP ====================== -->
+<section id="screen-student" class="screen" aria-label="Student portal">
+  <div class="app">
+    <header class="topbar">
+      <button class="iconbtn" id="stuMenu" aria-label="Open navigation menu"><span class="i" data-i="menu"></span></button>
+      <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL Portal</b><small>Student</small></div></div>
+      <div class="top-space"></div>
+      <button class="iconbtn bell" id="stuBell" aria-label="Notifications"><span class="i" data-i="bell"></span><span class="dot" id="stuBadge" hidden>0</span></button>
+      <img class="avatar" id="stuAvatar" src="logo.png" alt="Your passport photograph" />
+    </header>
+    <main class="main" id="stuView" tabindex="-1"></main>
+  </div>
+</section>
+<aside class="sidebar" id="stuSidebar" aria-label="Student navigation" aria-hidden="true">
+  <div class="side-head">
+    <img src="logo.png" alt="" /><div><b>IBBUL</b><small>Student Portal</small></div>
+    <button class="side-close" data-close-side aria-label="Close menu"><span class="i" data-i="x"></span></button>
+  </div>
+  <div class="side-profile"><img id="sideAvatar" src="logo.png" alt="" /><div style="min-width:0"><b id="sideName">Student</b><small id="sideMat">—</small></div></div>
+  <nav class="side-nav">
+    <div class="side-sec">Overview</div>
+    <button class="nav-item on" data-view="dashboard"><span class="i" data-i="layout-dashboard"></span> Dashboard</button>
+    <button class="nav-item" data-view="results"><span class="i" data-i="file-text"></span> My Results</button>
+    <div class="side-sec">Academics</div>
+    <button class="nav-item" data-view="studio"><span class="i" data-i="bar-chart"></span> CGPA Studio</button>
+    <button class="nav-item" data-view="calculator"><span class="i" data-i="calculator"></span> CGPA Calculator</button>
+    <div class="side-sec">Account</div>
+    <button class="nav-item" data-view="notifications"><span class="i" data-i="bell"></span> Notifications <span class="tag" id="navBadge" hidden>0</span></button>
+    <button class="nav-item" data-view="profile"><span class="i" data-i="user"></span> Profile</button>
+    <button class="nav-item" data-view="assistant"><span class="i" data-i="bot"></span> AI Assistant</button>
+    <button class="nav-item" data-view="settings"><span class="i" data-i="settings"></span> Settings</button>
+    <div class="side-sec">Session</div>
+    <button class="nav-item" data-view="logout"><span class="i" data-i="power"></span> Logout</button>
+  </nav>
+  <div class="side-foot">IBBUL ICT Directorate · v2.0<br />© <span class="yr"></span> Ibrahim Badamasi Babangida University</div>
+</aside>
+
+<!-- ====================== ADMIN CONSOLE ====================== -->
+<section id="screen-admin" class="screen" aria-label="Administrator console">
+  <div class="app">
+    <header class="topbar admin">
+      <button class="iconbtn" id="admMenu" aria-label="Open navigation menu"><span class="i" data-i="menu"></span></button>
+      <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL Console</b><small>Administrator</small></div></div>
+      <div class="top-space"></div>
+      <button class="iconbtn bell" id="admBell" aria-label="Console activity"><span class="i" data-i="bell"></span><span class="dot" id="admBadge" hidden>0</span></button>
+      <button class="iconbtn" id="admLogout" aria-label="Sign out"><span class="i" data-i="power"></span></button>
+    </header>
+    <main class="main" id="admView" tabindex="-1"></main>
+  </div>
+</section>
+<aside class="sidebar admin" id="admSidebar" aria-label="Administrator navigation" aria-hidden="true">
+  <div class="side-head">
+    <img src="logo.png" alt="" /><div><b>Admin Console</b><small>Restricted Area</small></div>
+    <button class="side-close" data-close-side aria-label="Close menu"><span class="i" data-i="x"></span></button>
+  </div>
+  <nav class="side-nav">
+    <div class="side-sec">Overview</div>
+    <button class="nav-item on" data-aview="dashboard"><span class="i" data-i="layout-dashboard"></span> Dashboard</button>
+    <button class="nav-item" data-aview="statistics"><span class="i" data-i="pie-chart"></span> View Statistics</button>
+    <div class="side-sec">Records</div>
+    <button class="nav-item" data-aview="students"><span class="i" data-i="users"></span> Manage Students</button>
+    <button class="nav-item" data-aview="courses"><span class="i" data-i="book-open"></span> Manage Courses</button>
+    <button class="nav-item" data-aview="results"><span class="i" data-i="clipboard-list"></span> Manage Results</button>
+    <div class="side-sec">Communication</div>
+    <button class="nav-item" data-aview="announcements"><span class="i" data-i="megaphone"></span> Announcements</button>
+    <button class="nav-item" data-aview="notifications"><span class="i" data-i="bell"></span> Notifications</button>
+    <div class="side-sec">Analysis</div>
+    <button class="nav-item" data-aview="reports"><span class="i" data-i="file-bar-chart"></span> Reports</button>
+    <div class="side-sec">Session</div>
+    <button class="nav-item" data-aview="logout"><span class="i" data-i="power"></span> Logout</button>
+  </nav>
+  <div class="side-foot">Access is logged and audited.<br />IBBUL ICT Directorate</div>
+</aside>
+
+<!-- ====================== QR VERIFICATION ====================== -->
+<section id="screen-verify" class="screen" aria-label="Result verification">
+  <div class="verify-wrap"><div class="verify-card" id="verifyCard"></div></div>
+</section>
+
+<!-- ====================== GLOBAL UI ====================== -->
+<div class="scrim" id="scrim"></div>
+
+<button class="fab" id="fabAI" aria-label="Open AI Assistant">
+  <span class="fab-label">Ask the AI Assistant</span>
+  <span class="i" data-i="bot"></span>
+</button>
+
+<div class="modal-root" id="modalRoot" aria-hidden="true">
+  <div class="modal-scrim" data-close="1"></div>
+  <div class="modal-shell" data-close="1">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-h">
+        <h3 id="modalTitle"><span class="mIcon"></span><span>Title</span></h3>
+        <button class="x" data-close="1" aria-label="Close dialog"><span class="i" data-i="x"></span></button>
+      </div>
+      <div class="modal-b" id="modalBody"></div>
+      <div class="modal-f" id="modalFoot"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="printRoot"></div>
+<script>
+"use strict";
+/* ==========================================================================
+   PART 3 — CORE ENGINE
+   0. Offline QR encoder · 1. Icons · 2. Helpers · 3. Modal engine · 4. Toasts
+   5. Academic model · 6. Database + photos · 7. Routing/sidebar/FAB · 8. Auth
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 0. QR ---- */
+const QR = (function () {
+  const EXP = new Array(512), LOG = new Array(256);
+  (function () { let x = 1; for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; } for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; })();
+  const mul = (a, b) => (!a || !b) ? 0 : EXP[LOG[a] + LOG[b]];
+  function genPoly(n){ let p = [1]; for (let i = 0; i < n; i++){ const r = new Array(p.length + 1).fill(0); for (let j = 0; j < p.length; j++){ r[j] ^= p[j]; r[j + 1] ^= mul(p[j], EXP[i]); } p = r; } return p; }
+  function rs(data, ec){ const g = genPoly(ec), res = data.concat(new Array(ec).fill(0));
+    for (let i = 0; i < data.length; i++){ const c = res[i]; if (!c) continue; for (let j = 0; j < g.length; j++) res[i + j] ^= mul(g[j], c); }
+    return res.slice(data.length); }
+
+  const RS = { 1:[10,[[1,16]]], 2:[16,[[1,28]]], 3:[26,[[1,44]]], 4:[18,[[2,32]]], 5:[24,[[2,43]]],
+               6:[16,[[4,27]]], 7:[18,[[4,31]]], 8:[22,[[2,38],[2,39]]], 9:[22,[[3,36],[2,37]]], 10:[26,[[4,43],[1,44]]] };
+  const CAP = { 1:14,2:26,3:42,4:62,5:84,6:106,7:122,8:152,9:180,10:213 };
+  const ALIGN = { 1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50] };
+  const VER = { 7:0x07C94, 8:0x085BC, 9:0x09A99, 10:0x0A4D3 };
+  const FMT = [0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0];
+  const MASK = [ (i,j)=>(i+j)%2===0, i=>i%2===0, (i,j)=>j%3===0, (i,j)=>(i+j)%3===0,
+    (i,j)=>(((i/2|0)+(j/3|0))%2)===0, (i,j)=>((i*j)%2)+((i*j)%3)===0,
+    (i,j)=>((((i*j)%2)+((i*j)%3))%2)===0, (i,j)=>((((i+j)%2)+((i*j)%3))%2)===0 ];
+
+  function bytesOf(str){ const s = unescape(encodeURIComponent(str)), o = []; for (let i = 0; i < s.length; i++) o.push(s.charCodeAt(i)); return o; }
+
+  function build(v, mask, cw){
+    const n = v * 4 + 17, m = Array.from({ length:n }, () => new Array(n).fill(null));
+    const put = (r, c, val) => { if (r >= 0 && c >= 0 && r < n && c < n) m[r][c] = val; };
+    [[0,0],[0,n-7],[n-7,0]].forEach(([R,C]) => { for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++){
+      const on = (r>=0&&r<=6&&(c===0||c===6)) || (c>=0&&c<=6&&(r===0||r===6)) || (r>=2&&r<=4&&c>=2&&c<=4);
+      put(R+r, C+c, on ? 1 : 0); } });
+    for (let i = 8; i < n - 8; i++){ const v2 = i % 2 === 0 ? 1 : 0; if (m[6][i] === null) m[6][i] = v2; if (m[i][6] === null) m[i][6] = v2; }
+    const ap = ALIGN[v];
+    ap.forEach(r => ap.forEach(c => {
+      if ((r === 6 && c === 6) || (r === 6 && c === n - 7) || (r === n - 7 && c === 6)) return;
+      for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) put(r + dr, c + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1 ? 1 : 0);
+    }));
+    for (let i = 0; i < 9; i++){ if (m[i][8] === null) m[i][8] = 0; if (m[8][i] === null) m[8][i] = 0; }
+    for (let i = 0; i < 8; i++){ if (m[n-1-i][8] === null) m[n-1-i][8] = 0; if (m[8][n-1-i] === null) m[8][n-1-i] = 0; }
+    m[n - 8][8] = 1;
+    if (v >= 7){ const b = VER[v]; for (let i = 0; i < 18; i++){ const bit = (b >> i) & 1; m[(i/3)|0][n-11+(i%3)] = bit; m[n-11+(i%3)][(i/3)|0] = bit; } }
+    let inc = -1, row = n - 1, bit = 7, byte = 0;
+    for (let col = n - 1; col > 0; col -= 2){
+      if (col === 6) col--;
+      for (;;){
+        for (let k = 0; k < 2; k++){ const c = col - k;
+          if (m[row][c] === null){
+            let dark = byte < cw.length ? ((cw[byte] >>> bit) & 1) === 1 : false;
+            if (MASK[mask](row, c)) dark = !dark;
+            m[row][c] = dark ? 1 : 0;
+            if (--bit < 0){ bit = 7; byte++; }
+          } }
+        row += inc;
+        if (row < 0 || row >= n){ row -= inc; inc = -inc; break; }
+      }
+    }
+    const f = FMT[mask];
+    for (let i = 0; i < 15; i++){ const b = (f >> i) & 1;
+      if (i < 6) m[i][8] = b; else if (i < 8) m[i+1][8] = b; else m[n-15+i][8] = b;
+      if (i < 8) m[8][n-i-1] = b; else if (i < 9) m[8][15-i] = b; else m[8][14-i] = b; }
+    return m;
+  }
+  function penalty(m){
+    const n = m.length; let p = 0, dark = 0;
+    for (let i = 0; i < n; i++){ let rr = 1, cr = 1;
+      for (let j = 0; j < n; j++){
+        if (m[i][j]) dark++;
+        if (j){ rr = m[i][j] === m[i][j-1] ? rr+1 : 1; if (rr === 5) p += 3; else if (rr > 5) p++; 
+                cr = m[j][i] === m[j-1][i] ? cr+1 : 1; if (cr === 5) p += 3; else if (cr > 5) p++; }
+        if (i < n-1 && j < n-1 && m[i][j] === m[i][j+1] && m[i][j] === m[i+1][j] && m[i][j] === m[i+1][j+1]) p += 3;
+      } }
+    return p + Math.floor(Math.abs((dark * 100) / (n * n) - 50) / 5) * 10;
+  }
+  function encode(text){
+    const bytes = bytesOf(text);
+    let v = 0; for (let i = 1; i <= 10; i++) if (bytes.length <= CAP[i]){ v = i; break; }
+    if (!v){ v = 10; bytes.length = CAP[10]; }
+    const [ecLen, groups] = RS[v], total = groups.reduce((s, [b, d]) => s + b * d, 0);
+    const bits = []; const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); };
+    push(4, 4); push(bytes.length, 8); bytes.forEach(b => push(b, 8));
+    for (let i = 0; i < 4 && bits.length < total * 8; i++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    const data = []; for (let i = 0; i < bits.length; i += 8){ let x = 0; for (let j = 0; j < 8; j++) x = (x << 1) | bits[i+j]; data.push(x); }
+    const pad = [0xEC, 0x11]; let pi = 0; while (data.length < total) data.push(pad[pi++ % 2]);
+    const dB = [], eB = []; let off = 0;
+    groups.forEach(([cnt, dc]) => { for (let i = 0; i < cnt; i++){ const blk = data.slice(off, off + dc); off += dc; dB.push(blk); eB.push(rs(blk, ecLen)); } });
+    const maxD = Math.max(...dB.map(b => b.length)), out = [];
+    for (let i = 0; i < maxD; i++) dB.forEach(b => { if (i < b.length) out.push(b[i]); });
+    for (let i = 0; i < ecLen; i++) eB.forEach(b => out.push(b[i]));
+    let best = null, bp = Infinity;
+    for (let k = 0; k < 8; k++){ const mm = build(v, k, out), p = penalty(mm); if (p < bp){ bp = p; best = mm; } }
+    return best;
+  }
+  function draw(cv, text, scale){
+    const m = encode(text), n = m.length, q = 4, s = scale || 4, dim = (n + q * 2) * s;
+    cv.width = dim; cv.height = dim;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, dim, dim); g.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect((c + q) * s, (r + q) * s, s, s);
+    return cv;
+  }
+  return { draw, encode };
+})();
+
+/* ------------------------------------------------------------ 1. ICONS ---- */
+const ICONS = {
+  'menu':'<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>',
+  'x':'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  'arrow-right':'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  'arrow-left':'<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+  'chevron-right':'<path d="m9 18 6-6-6-6"/>',
+  'shield':'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  'shield-check':'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  'lock':'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  'key':'<path d="m15.5 7.5 3 3L22 7l-3-3"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
+  'qr-code':'<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+  'scan-line':'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
+  'award':'<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>',
+  'graduation-cap':'<path d="M22 10v6"/><path d="M6 12.5V16c0 1 2.7 3 6 3s6-2 6-3v-3.5"/><path d="m2 10 10-5 10 5-10 5z"/>',
+  'eye':'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off':'<path d="M10.7 5.1A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a13.2 13.2 0 0 1-2.2 2.9"/><path d="M6.6 6.6A13.5 13.5 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="m2 2 20 20"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  'log-in':'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/>',
+  'power':'<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/>',
+  'bell':'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  'layout-dashboard':'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  'file-text':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  'file-check':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+  'file-bar-chart':'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 18v-2"/><path d="M12 18v-4"/><path d="M16 18v-6"/>',
+  'bar-chart':'<line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/>',
+  'pie-chart':'<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+  'calculator':'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>',
+  'user':'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'user-check':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
+  'bot':'<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+  'settings':'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  'book-open':'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  'clipboard-list':'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  'megaphone':'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  'search':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  'printer':'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+  'download':'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  'upload':'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  'save':'<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  'plus':'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  'minus':'<path d="M5 12h14"/>',
+  'pencil':'<path d="M21.17 6.83a2.83 2.83 0 0 0-4-4L3 17v4h4z"/><path d="m15 5 4 4"/>',
+  'trash':'<path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  'image':'<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  'camera':'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+  'rotate-ccw':'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  'check':'<path d="M20 6 9 17l-5-5"/>',
+  'check-circle':'<path d="M21.8 10A10 10 0 1 1 17 3.3"/><path d="m9 11 3 3L22 4"/>',
+  'x-circle':'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  'alert-triangle':'<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  'info':'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  'send':'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  'trophy':'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0z"/>',
+  'target':'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  'layers':'<path d="m12 2 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+  'mail':'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  'phone':'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z"/>',
+  'building':'<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+  'activity':'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  'clock':'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'calendar':'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  'trending-up':'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  'trending-down':'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+  'sparkles':'<path d="m12 3-1.9 5.8L4 10.7l6.1 1.9L12 18.4l1.9-5.8 6.1-1.9-6.1-1.9z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>',
+  'book':'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  'database':'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  'list':'<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  'message-circle':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
+  'log-out':'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'
+};
+function iconSVG(name, cls){
+  const p = ICONS[name] || ICONS['info'];
+  return `<svg class="ico ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${p}</svg>`;
+}
+function paintIcons(root){
+  (root || document).querySelectorAll('.i[data-i]').forEach(el => {
+    const wrap = document.createElement('span');
+    wrap.innerHTML = iconSVG(el.dataset.i, el.dataset.cls || '');
+    el.replaceWith(wrap.firstChild);
+  });
+}
+/** Inline helper for template strings. */
+const I = (n, c) => iconSVG(n, c);
+
+/* ---------------------------------------------------------- 2. HELPERS ---- */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const nf = (n, d = 2) => Number(n || 0).toFixed(d);
+const todayStr = () => new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+const nowStr = () => new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+const uid = p => (p || 'id') + '-' + Math.random().toString(36).slice(2, 9);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const initialsOf = n => String(n || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+/* ------------------------------------------------------ 3. MODAL ENGINE ---- */
+const MODAL = { open:false, onClose:null, lastFocus:null, scrollY:0 };
+function lockScroll(on){
+  const b = document.body;
+  if (on){ MODAL.scrollY = window.scrollY; b.classList.add('locked'); b.style.top = `-${MODAL.scrollY}px`; b.style.position = 'fixed'; b.style.width = '100%'; }
+  else { b.classList.remove('locked'); b.style.position = ''; b.style.top = ''; b.style.width = ''; window.scrollTo(0, MODAL.scrollY); }
+}
+function openModal({ title, icon, body, actions = [], wide = false, onClose = null }){
+  const root = $('#modalRoot'), modal = $('.modal', root);
+  $('#modalTitle .mIcon').innerHTML = icon ? I(icon) : '';
+  $('#modalTitle span:last-child').textContent = title || '';
+  $('#modalBody').innerHTML = body || '';
+  modal.classList.toggle('wide', !!wide);
+  const f = $('#modalFoot'); f.innerHTML = '';
+  actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (a.cls || 'ghost');
+    b.innerHTML = (a.icon ? I(a.icon) : '') + '<span>' + esc(a.label) + '</span>';
+    b.onclick = () => { if (a.onClick) a.onClick(); else closeModal(); };
+    f.appendChild(b);
+  });
+  f.style.display = actions.length ? '' : 'none';
+  MODAL.onClose = onClose;
+  MODAL.lastFocus = document.activeElement;
+  MODAL.open = true;
+  root.classList.add('on'); root.setAttribute('aria-hidden', 'false');
+  lockScroll(true);
+  paintIcons($('#modalBody'));
+  $('.modal-shell', root).scrollTop = 0;
+  setTimeout(() => {
+    const first = $('#modalBody input:not([type=hidden]), #modalBody select, #modalBody textarea, #modalBody button') || $('.modal-f .btn', root) || $('.x', root);
+    if (first) first.focus({ preventScroll:true });
+  }, 60);
+  return $('#modalBody');
+}
+function closeModal(){
+  if (!MODAL.open) return;
+  const root = $('#modalRoot');
+  root.classList.remove('on'); root.setAttribute('aria-hidden', 'true');
+  MODAL.open = false;
+  lockScroll(false);
+  if (MODAL.lastFocus && MODAL.lastFocus.focus) MODAL.lastFocus.focus({ preventScroll:true });
+  const fn = MODAL.onClose; MODAL.onClose = null; if (fn) fn();
+}
+function confirmModal({ title, icon = 'alert-triangle', message, confirmLabel = 'Confirm', cls = 'danger', onYes }){
+  openModal({ title, icon, body:`<div class="notice red">${I('alert-triangle')}<span>${message}</span></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:confirmLabel, cls, icon:'check', onClick(){ closeModal(); onYes && onYes(); } }] });
+}
+$('#modalRoot').addEventListener('click', e => {
+  if (e.target.dataset && e.target.dataset.close) closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ if (MODAL.open) closeModal(); else closeSidebars(); return; }
+  if (e.key === 'Tab' && MODAL.open){
+    const nodes = $$('.modal button, .modal [href], .modal input, .modal select, .modal textarea').filter(n => !n.disabled && n.offsetParent !== null);
+    if (!nodes.length) return;
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+/* ---------------------------------------------------------- 4. TOASTS ---- */
+function toast(msg, kind = ''){
+  const map = { ok:'check-circle', err:'x-circle', warn:'alert-triangle', '':'info' };
+  const t = document.createElement('div');
+  t.className = 'toast ' + kind;
+  t.innerHTML = I(map[kind] || 'info') + '<span>' + esc(msg) + '</span>';
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; setTimeout(() => t.remove(), 320); }, 3400);
+}
+
+/* -------------------------------------------------- 5. ACADEMIC MODEL ---- */
+const GP = { A:5, B:4, C:3, D:2, E:1, F:0 };
+const REMARK = { A:'Excellent', B:'Very Good', C:'Good', D:'Fair', E:'Pass', F:'Fail' };
+const SEMESTERS = ['First', 'Second'];
+const SESSION_LEVEL = { '2024/2025':100, '2025/2026':200 };
+const ALL_SESSIONS = Object.keys(SESSION_LEVEL);
+const FACULTY = 'Faculty of Natural Sciences';
+const DEPARTMENT = 'Computer Science';
+const levelFor = (sess, st) => SESSION_LEVEL[sess] || (st ? st.level : 100);
+const gradeFromScore = s => s >= 70 ? 'A' : s >= 60 ? 'B' : s >= 50 ? 'C' : s >= 45 ? 'D' : s >= 40 ? 'E' : 'F';
+function gpaOf(rows){ let u = 0, p = 0; (rows || []).forEach(r => { const n = Number(r.unit) || 0; u += n; p += n * (GP[r.grade] ?? 0); }); return { unit:u, point:p, gpa: u ? p / u : 0 }; }
+function classify(c){ return c >= 4.5 ? 'First Class Honours' : c >= 3.5 ? 'Second Class Honours (Upper Division)' : c >= 2.4 ? 'Second Class Honours (Lower Division)' : c >= 1.5 ? 'Third Class Honours' : c >= 1 ? 'Pass' : 'Fail / Withdrawal'; }
+function shortClass(c){ return c >= 4.5 ? 'First Class' : c >= 3.5 ? '2:1' : c >= 2.4 ? '2:2' : c >= 1.5 ? 'Third Class' : c >= 1 ? 'Pass' : 'Fail'; }
+function standing(c){ return c >= 4.5 ? 'Excellent Standing' : c >= 3.5 ? 'Very Good Standing' : c >= 2.4 ? 'Good Standing' : c >= 1.5 ? 'Satisfactory Standing' : c >= 1 ? 'Warning — Advisory' : 'Academic Probation'; }
+const sessionsOf = st => Object.keys(st.results || {}).sort();
+function termsOf(st){
+  const out = []; let cu = 0, cp = 0;
+  sessionsOf(st).forEach(sess => SEMESTERS.forEach(sem => {
+    const rows = (st.results[sess] || {})[sem];
+    if (!rows || !rows.length) return;
+    const g = gpaOf(rows); cu += g.unit; cp += g.point;
+    out.push({ session:sess, semester:sem, rows, gpa:g.gpa, unit:g.unit, point:g.point,
+      cumUnit:cu, cumPoint:cp, cgpa: cu ? cp / cu : 0, label:`${sess} · ${sem}` });
+  }));
+  return out;
+}
+const latestTerm = st => { const t = termsOf(st); return t[t.length - 1] || null; };
+const cgpaOf = st => { const t = latestTerm(st); return t ? t.cgpa : 0; };
+const gpaNow = st => { const t = latestTerm(st); return t ? t.gpa : 0; };
+const termAt = (st, s, m) => termsOf(st).find(t => t.session === s && t.semester === m) || null;
+
+/* ----------------------------------------------- 6. DATABASE + PHOTOS ---- */
+const LS_KEY = 'ibbul_portal_v2';
+let DB = null;
+
+const DEFAULT_COURSES = [
+  { code:'CSC 111', title:'Introduction to Computer Science',   unit:3, level:100, sem:'First'  },
+  { code:'MTH 111', title:'Algebra and Trigonometry',           unit:3, level:100, sem:'First'  },
+  { code:'PHY 111', title:'General Physics I',                  unit:3, level:100, sem:'First'  },
+  { code:'CHM 111', title:'General Chemistry I',                unit:3, level:100, sem:'First'  },
+  { code:'STA 111', title:'Descriptive Statistics',             unit:3, level:100, sem:'First'  },
+  { code:'GST 111', title:'Communication in English I',         unit:2, level:100, sem:'First'  },
+  { code:'CSC 112', title:'Introduction to Problem Solving',    unit:3, level:100, sem:'Second' },
+  { code:'MTH 112', title:'Calculus and Analytic Geometry',     unit:3, level:100, sem:'Second' },
+  { code:'PHY 112', title:'General Physics II',                 unit:3, level:100, sem:'Second' },
+  { code:'CHM 112', title:'General Chemistry II',               unit:3, level:100, sem:'Second' },
+  { code:'STA 112', title:'Probability I',                      unit:2, level:100, sem:'Second' },
+  { code:'GST 112', title:'Nigerian Peoples and Culture',       unit:2, level:100, sem:'Second' },
+  { code:'CSC 211', title:'Computer Programming I',             unit:3, level:200, sem:'First'  },
+  { code:'CSC 213', title:'Digital Logic Design',               unit:3, level:200, sem:'First'  },
+  { code:'CSC 215', title:'Discrete Structures',                unit:3, level:200, sem:'First'  },
+  { code:'MTH 211', title:'Linear Algebra I',                   unit:3, level:200, sem:'First'  },
+  { code:'STA 211', title:'Statistical Inference',              unit:3, level:200, sem:'First'  },
+  { code:'GST 211', title:'Entrepreneurship Studies',           unit:2, level:200, sem:'First'  },
+  { code:'CSC 212', title:'Computer Programming II',            unit:3, level:200, sem:'Second' },
+  { code:'CSC 214', title:'Data Structures and Algorithms',     unit:3, level:200, sem:'Second' },
+  { code:'CSC 216', title:'Computer Architecture',              unit:3, level:200, sem:'Second' },
+  { code:'CSC 218', title:'Operating Systems I',                unit:2, level:200, sem:'Second' },
+  { code:'MTH 212', title:'Differential Equations',             unit:3, level:200, sem:'Second' },
+  { code:'GST 212', title:'Peace Studies and Conflict Resolution', unit:2, level:200, sem:'Second' }
+];
+const STUDENT_NAMES = ['Abdullahi Musa Ndagi','Fatima Sani Lapai','Ibrahim Yakubu Gbara','Aisha Mohammed Bida',
+  'Suleiman Aliyu Kutigi','Zainab Umar Paiko','Yusuf Danladi Agaie','Hauwa Bello Katcha','Musa Idris Gulu','Maryam Salihu Muye'];
+const STUDENT_PASSWORDS = ['Ibbul@1100','Lapai#1101','Csc$1102','Niger@1103','Green#1104',
+  'Portal@1105','Gold#1106','Scholar@1107','Nexus#1108','Summit@1109'];
+const ABILITY = [78, 74, 70, 66, 62, 58, 55, 52, 48, 45];
+
+function seedResults(matric, idx){
+  const res = {};
+  ALL_SESSIONS.forEach(sess => {
+    const lvl = SESSION_LEVEL[sess]; res[sess] = {};
+    SEMESTERS.forEach(sem => {
+      res[sess][sem] = DEFAULT_COURSES.filter(c => c.level === lvl && c.sem === sem).map(c => {
+        const rng = mulberry32(hashStr(matric + c.code + sess + sem));
+        const score = clamp(ABILITY[idx] + (sess === '2025/2026' ? 3 : 0) + (rng() * 26 - 13), 30, 96);
+        return { code:c.code, title:c.title, unit:c.unit, grade:gradeFromScore(score) };
+      });
+    });
+  });
+  return res;
+}
+function buildStudents(){
+  return STUDENT_NAMES.map((name, i) => {
+    const sfx = 1100 + i, matric = `U25/FPY/CSC/${sfx}`;
+    const st = {
+      matric, name, password:STUDENT_PASSWORDS[i], mustChange:true,
+      faculty:FACULTY, department:DEPARTMENT, level:200,
+      photo:null,                    // admin-uploaded image (data URL)
+      photoFile:`${sfx}.jpg`,        // local file fallback in project folder
+      photoUpdated:null,
+      email:`${name.split(' ')[0].toLowerCase()}.${sfx}@ibbul.edu.ng`,
+      phone:`080${30000000 + i * 111111}`, entryYear:2025,
+      results:seedResults(matric, i), notifications:[], calcSaves:[]
+    };
+    st.notifications = [
+      { id:uid('n'), type:'result', title:'New result uploaded', body:'Your 2025/2026 Second Semester result has been approved and published.', date:nowStr(), read:false },
+      { id:uid('n'), type:'cgpa', title:'CGPA updated', body:`Your cumulative grade point average is now ${nf(cgpaOf(st))} (${shortClass(cgpaOf(st))}).`, date:nowStr(), read:false },
+      { id:uid('n'), type:'deadline', title:'Course registration deadline', body:'Registration for the next semester closes on 30 September. Late registration attracts a penalty.', date:nowStr(), read:true }
+    ];
+    return st;
+  });
+}
+function freshDB(){
+  return {
+    version:'v2',
+    admin:{ username:'admin', password:'ibbul2025', name:'Directorate of ICT' },
+    students:buildStudents(),
+    courses:DEFAULT_COURSES.map(c => ({ ...c, id:uid('c') })),
+    announcements:[
+      { id:uid('a'), title:'Second Semester Results Released', body:'The Senate has approved the release of 2025/2026 Second Semester results for the Department of Computer Science.', date:todayStr(), tag:'Results' },
+      { id:uid('a'), title:'Matriculation Ceremony', body:'All fresh students are required to attend the matriculation ceremony at the University Convocation Ground.', date:todayStr(), tag:'Event' },
+      { id:uid('a'), title:'Payment of School Charges', body:'Students yet to pay their school charges should do so before the deadline to avoid deactivation of portal access.', date:todayStr(), tag:'Finance' }
+    ],
+    adminLog:[{ id:uid('l'), title:'System initialised', body:'Demonstration dataset loaded with 10 Computer Science students.', date:nowStr(), read:false }],
+    verifications:{},
+    settings:{ density:'normal', motion:'on' }
+  };
+}
+function loadDB(){
+  try { const raw = localStorage.getItem(LS_KEY);
+    if (raw){ const p = JSON.parse(raw); if (p && p.version === 'v2' && Array.isArray(p.students)) return p; }
+  } catch (e){}
+  const d = freshDB();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e){}
+  return d;
+}
+function saveDB(){
+  try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); return true; }
+  catch (e){ toast('Storage full — photos are large. Remove an unused picture and try again.', 'warn'); return false; }
+}
+const findStudent = m => DB.students.find(s => s.matric.toUpperCase() === String(m).toUpperCase());
+function notify(st, type, title, body){
+  st.notifications.unshift({ id:uid('n'), type, title, body, date:nowStr(), read:false });
+  if (st.notifications.length > 40) st.notifications.length = 40;
+}
+function logAdmin(title, body){
+  DB.adminLog.unshift({ id:uid('l'), title, body, date:nowStr(), read:false });
+  if (DB.adminLog.length > 40) DB.adminLog.length = 40;
+}
+const unreadOf = st => (st.notifications || []).filter(n => !n.read).length;
+
+/* --- Photo resolution: admin upload wins, then local file, then initials --- */
+const photoSrc = st => (st && (st.photo || st.photoFile)) || '';
+function imgTag(st, cls, alt){
+  const src = photoSrc(st);
+  if (!src) return `<div class="${cls} avatar-fallback" role="img" aria-label="${esc(alt || st.name)}">${esc(initialsOf(st.name))}</div>`;
+  return `<img class="${cls}" src="${esc(src)}" alt="${esc(alt || ('Passport photograph of ' + st.name))}" onerror="this.onerror=null;this.replaceWith(Object.assign(document.createElement('div'),{className:'${cls} avatar-fallback',textContent:'${esc(initialsOf(st.name))}'}))" />`;
+}
+function setImg(el, st){
+  if (!el) return;
+  const src = photoSrc(st);
+  el.src = src || 'logo.png';
+  el.onerror = function(){ this.onerror = null; this.src = 'logo.png'; };
+}
+/** Downscale + compress an uploaded image so localStorage never overflows. */
+function compressImage(file, maxSide = 420, quality = 0.82){
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type)) return reject(new Error('Not an image file.'));
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('Could not read the file.'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Unsupported image.'));
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        const g = cv.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+        g.drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL('image/jpeg', quality));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ------------------------------------------- 7. ROUTING / SIDEBAR / FAB ---- */
+let CURRENT = null, ADMIN = false;
+let STU_VIEW = 'dashboard', ADM_VIEW = 'dashboard';
+const STU_HISTORY = [];
+
+function show(id){
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  updateFab();
+  window.scrollTo(0, 0);
+}
+function updateFab(){
+  const fab = $('#fabAI');
+  const onStudent = $('#screen-student').classList.contains('active');
+  fab.classList.toggle('show', onStudent && !!CURRENT);
+  fab.classList.toggle('hide-me', onStudent && STU_VIEW === 'assistant');
+}
+function openSidebar(sel){
+  const el = $(sel);
+  el.classList.add('open'); el.setAttribute('aria-hidden', 'false');
+  $('#scrim').classList.add('on');
+  const first = $('.nav-item', el); if (first) setTimeout(() => first.focus({ preventScroll:true }), 220);
+}
+function closeSidebars(){
+  ['#stuSidebar', '#admSidebar'].forEach(s => { const e = $(s); e.classList.remove('open'); e.setAttribute('aria-hidden', 'true'); });
+  $('#scrim').classList.remove('on');
+}
+$('#scrim').addEventListener('click', closeSidebars);
+$$('[data-close-side]').forEach(b => b.onclick = closeSidebars);
+
+/** Liquid-glass back button used by every major page. */
+function backBtn(label){
+  return `<button class="backbtn" data-back="1">${I('arrow-left')}<span>${esc(label || 'Back')}</span></button>`;
+}
+function wireBack(root, handler){
+  $$('[data-back]', root).forEach(b => b.onclick = handler);
+}
+function goBackStudent(){
+  const prev = STU_HISTORY.pop();
+  renderStudent(prev && prev !== STU_VIEW ? prev : 'dashboard', true);
+}
+
+/* ------------------------------------------------------------- 8. AUTH ---- */
+let loginMode = 'student';
+function setLoginMode(mode){
+  loginMode = mode;
+  const isAdmin = mode === 'admin';
+  $('#tabStudent').classList.toggle('on', !isAdmin); $('#tabStudent').setAttribute('aria-selected', String(!isAdmin));
+  $('#tabAdmin').classList.toggle('on', isAdmin);   $('#tabAdmin').setAttribute('aria-selected', String(isAdmin));
+  $('#lblUser').textContent = isAdmin ? 'Administrator Username' : 'Matric Number';
+  $('#fUser').placeholder = isAdmin ? 'admin' : 'U25/FPY/CSC/1100';
+  $('#loginKicker').textContent = isAdmin ? 'Restricted Access' : 'Student Access';
+  $('#loginTitle').textContent = isAdmin ? 'Administrator sign in' : 'Sign in to your portal';
+  $('#loginSubtitle').textContent = isAdmin ? 'Authorised personnel of the Directorate of ICT only.' : 'Use the credentials issued by the Directorate of ICT.';
+  $('#loginNotice').innerHTML = isAdmin
+    ? `<div class="notice red">${I('alert-triangle')}<span><b>This portal is restricted to administrators only.</b> Unauthorised access is an offence and all activity on this console is logged.</span></div>` : '';
+  $('#demoHint').innerHTML = isAdmin
+    ? `<b>Demo credentials</b> — Username <span class="mono">admin</span> · Password <span class="mono">ibbul2025</span>`
+    : `<b>Demo credentials</b> — <span class="mono">U25/FPY/CSC/1100</span> · <span class="mono">Ibbul@1100</span>`;
+  $('#adminModeLabel').textContent = isAdmin ? 'Student Login' : 'Continue as Admin';
+  $('#loginErr').textContent = ''; $('#fUser').value = ''; $('#fPass').value = '';
+}
+$('#goProceed').onclick = () => { setLoginMode('student'); show('screen-login'); };
+$('#goAdminFromHero').onclick = () => { show('screen-login'); setLoginMode('admin'); };
+$('#backHome').onclick = () => show('screen-landing');
+$('#btnAdminMode').onclick = () => setLoginMode(loginMode === 'admin' ? 'student' : 'admin');
+$('#tabStudent').onclick = () => setLoginMode('student');
+$('#tabAdmin').onclick = () => setLoginMode('admin');
+function togglePw(on){
+  $('#fPass').type = on ? 'text' : 'password';
+  $('#fShow').checked = on;
+  $('#fEye').innerHTML = I(on ? 'eye-off' : 'eye');
+}
+$('#fEye').onclick = () => togglePw($('#fPass').type === 'password');
+$('#fShow').onchange = e => togglePw(e.target.checked);
+$('#fForgot').onclick = () => openModal({
+  title:'Forgot password', icon:'key',
+  body:`<p>For security reasons passwords cannot be reset from this page.</p>
+    <div class="notice info">${I('info')}<span>Visit the <b>Directorate of ICT</b> (Admin Block, Room 12) with your student identity card, or e-mail <b>ict@ibbul.edu.ng</b> from your registered address. An administrator will issue a temporary password which you must change at first login.</span></div>`,
+  actions:[{ label:'Close', cls:'ghost' }]
+});
+$('#loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const u = $('#fUser').value.trim(), p = $('#fPass').value, err = $('#loginErr');
+  if (!u || !p){ err.textContent = 'Enter both fields to continue.'; return; }
+  if (loginMode === 'admin'){
+    if (u.toLowerCase() === DB.admin.username && p === DB.admin.password){
+      ADMIN = true; CURRENT = null; err.textContent = '';
+      logAdmin('Administrator signed in', 'Console session started at ' + nowStr());
+      saveDB(); show('screen-admin'); renderAdmin('dashboard');
+      toast('Welcome back, Administrator.', 'ok');
+    } else err.textContent = 'Invalid administrator credentials.';
+    return;
+  }
+  const st = findStudent(u);
+  if (!st || st.password !== p){ err.textContent = 'Invalid matric number or password.'; return; }
+  err.textContent = ''; CURRENT = st; ADMIN = false;
+  try { $('#fRemember').checked ? localStorage.setItem('ibbul_remember', st.matric) : localStorage.removeItem('ibbul_remember'); } catch (e){}
+  STU_HISTORY.length = 0;
+  show('screen-student'); renderStudent('dashboard', true);
+  if (st.mustChange) forceChangePassword(); else toast(`Welcome, ${st.name.split(' ')[0]}.`, 'ok');
+});
+function forceChangePassword(){
+  openModal({
+    title:'Change your password', icon:'key',
+    body:`<div class="notice">${I('lock')}<span>This is your <b>first login</b>. For your security you must replace the temporary password issued by the ICT Directorate before continuing.</span></div>
+      <div class="field"><label for="cpOld">Current password</label><input class="input" id="cpOld" type="password" placeholder="Temporary password" /></div>
+      <div class="field"><label for="cpNew">New password</label><input class="input" id="cpNew" type="password" placeholder="At least 6 characters" /></div>
+      <div class="field"><label for="cpNew2">Confirm new password</label><input class="input" id="cpNew2" type="password" placeholder="Repeat new password" /></div>
+      <label class="check"><input type="checkbox" id="cpShow" /> Show passwords</label>
+      <div class="err" id="cpErr" role="alert"></div>`,
+    actions:[{ label:'Save', cls:'', icon:'save', onClick:doChange }]
+  });
+  $('#cpShow').onchange = e => ['cpOld','cpNew','cpNew2'].forEach(id => $('#' + id).type = e.target.checked ? 'text' : 'password');
+  function doChange(){
+    const o = $('#cpOld').value, n = $('#cpNew').value, n2 = $('#cpNew2').value, er = $('#cpErr');
+    if (o !== CURRENT.password) return er.textContent = 'Current password is incorrect.';
+    if (n.length < 6) return er.textContent = 'New password must be at least 6 characters.';
+    if (n === o) return er.textContent = 'New password must differ from the current one.';
+    if (n !== n2) return er.textContent = 'The two new passwords do not match.';
+    CURRENT.password = n; CURRENT.mustChange = false;
+    notify(CURRENT, 'security', 'Password changed', 'Your portal password was changed successfully on ' + nowStr() + '.');
+    saveDB(); closeModal(); renderStudent(STU_VIEW, true);
+    toast('Password updated. Use it on your next login.', 'ok');
+  }
+}
+function changePasswordDialog(){
+  openModal({ title:'Change password', icon:'key', body:`
+    <div class="field"><label for="pcOld">Current password</label><input class="input" id="pcOld" type="password" /></div>
+    <div class="field"><label for="pcNew">New password</label><input class="input" id="pcNew" type="password" placeholder="Minimum 6 characters" /></div>
+    <div class="field"><label for="pcNew2">Confirm new password</label><input class="input" id="pcNew2" type="password" /></div>
+    <div class="err" id="pcErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Save', cls:'', icon:'save', onClick(){
+      const o = $('#pcOld').value, n = $('#pcNew').value, n2 = $('#pcNew2').value, e = $('#pcErr');
+      if (o !== CURRENT.password) return e.textContent = 'Current password is incorrect.';
+      if (n.length < 6) return e.textContent = 'New password must be at least 6 characters.';
+      if (n !== n2) return e.textContent = 'The two new passwords do not match.';
+      CURRENT.password = n; CURRENT.mustChange = false;
+      notify(CURRENT, 'security', 'Password changed', 'Your password was updated on ' + nowStr() + '.');
+      saveDB(); closeModal(); toast('Password changed successfully.', 'ok'); renderStudent(STU_VIEW, true);
+    }}]});
+}
+function logoutStudent(){
+  confirmModal({ title:'Sign out', icon:'power', message:'Are you sure you want to end this session?',
+    confirmLabel:'Sign out', onYes(){ CURRENT = null; STU_HISTORY.length = 0; setLoginMode('student'); show('screen-login'); toast('You have been signed out.'); } });
+}
+function adminLogout(){
+  confirmModal({ title:'End admin session', icon:'power', message:'Sign out of the administrator console?',
+    confirmLabel:'Sign out', onYes(){ ADMIN = false; setLoginMode('admin'); show('screen-login'); toast('Administrator session ended.'); } });
+}
+
+"use strict";
+/* ==========================================================================
+   PART 4 — CHARTS · STUDENT PORTAL · AI · PRINT/QR · ADMIN CONSOLE · BOOT
+   ========================================================================== */
+
+/* ---------------------------------------------------- 9. CHART ENGINE ---- */
+let chartJobs = [];
+const resetCharts = () => { chartJobs = []; };
+const chart = fn => { chartJobs.push(fn); try { fn(); } catch (e){} };
+let rzT;
+window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => chartJobs.forEach(f => { try { f(); } catch (e){} }), 170); });
+
+function fit(cv, h){
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(220, cv.parentElement.clientWidth);
+  cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + 'px';
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  return { g, w, h };
+}
+function axis(g, w, h, pad, max, ticks){
+  g.strokeStyle = '#e8ecea'; g.fillStyle = '#8d979f'; g.font = '10px system-ui'; g.lineWidth = 1;
+  for (let i = 0; i <= ticks; i++){
+    const y = pad.t + (h - pad.t - pad.b) * (i / ticks);
+    g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke();
+    g.fillText(nf(max - max * i / ticks, 1), 3, y + 3);
+  }
+}
+function drawLine(cv, labels, values, opt = {}){
+  if (!cv || !values.length) return;
+  const { g, w, h } = fit(cv, opt.height || 210);
+  const pad = { l:30, r:10, t:16, b:26 }, max = opt.max || 5;
+  axis(g, w, h, pad, max, 5);
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const X = i => pad.l + (values.length === 1 ? iw / 2 : iw * i / (values.length - 1));
+  const Y = v => pad.t + ih - clamp(v, 0, max) / max * ih;
+  const grd = g.createLinearGradient(0, pad.t, 0, h - pad.b);
+  grd.addColorStop(0, 'rgba(14,122,77,.30)'); grd.addColorStop(1, 'rgba(14,122,77,0)');
+  g.beginPath(); values.forEach((v, i) => i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)));
+  g.lineTo(X(values.length - 1), h - pad.b); g.lineTo(X(0), h - pad.b); g.closePath(); g.fillStyle = grd; g.fill();
+  g.beginPath(); values.forEach((v, i) => i ? g.lineTo(X(i), Y(v)) : g.moveTo(X(i), Y(v)));
+  g.strokeStyle = opt.color || '#0b5d3b'; g.lineWidth = 2.6; g.lineJoin = 'round'; g.stroke();
+  g.textAlign = 'center';
+  values.forEach((v, i) => {
+    g.beginPath(); g.arc(X(i), Y(v), 4.4, 0, 7); g.fillStyle = '#fff'; g.fill();
+    g.lineWidth = 2.4; g.strokeStyle = opt.color || '#0b5d3b'; g.stroke();
+    g.fillStyle = '#1b2028'; g.font = '600 10px system-ui'; g.fillText(nf(v), X(i), Y(v) - 9);
+    g.fillStyle = '#8d979f'; g.font = '9px system-ui'; g.fillText(labels[i], X(i), h - 8);
+  });
+  g.textAlign = 'left';
+}
+function drawBars(cv, labels, values, opt = {}){
+  if (!cv || !values.length) return;
+  const { g, w, h } = fit(cv, opt.height || 210);
+  const pad = { l:30, r:10, t:16, b:30 }, max = opt.max || Math.max(5, ...values) || 5;
+  axis(g, w, h, pad, max, 4);
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const bw = Math.min(46, iw / values.length * 0.58);
+  g.textAlign = 'center';
+  values.forEach((v, i) => {
+    const cx = pad.l + iw * (i + .5) / values.length, bh = clamp(v, 0, max) / max * ih, y = pad.t + ih - bh;
+    const c = (opt.colors && opt.colors[i]) || '#0b5d3b', r = Math.min(7, bw / 2);
+    g.fillStyle = c;
+    g.beginPath();
+    g.moveTo(cx - bw / 2, pad.t + ih); g.lineTo(cx - bw / 2, y + r);
+    g.quadraticCurveTo(cx - bw / 2, y, cx - bw / 2 + r, y);
+    g.lineTo(cx + bw / 2 - r, y); g.quadraticCurveTo(cx + bw / 2, y, cx + bw / 2, y + r);
+    g.lineTo(cx + bw / 2, pad.t + ih); g.closePath(); g.fill();
+    g.fillStyle = '#1b2028'; g.font = '600 10px system-ui';
+    g.fillText(opt.fmt ? opt.fmt(v) : nf(v), cx, y - 6);
+    g.fillStyle = '#8d979f'; g.font = '9px system-ui';
+    String(labels[i]).split('\n').forEach((ln, k) => g.fillText(ln, cx, h - 17 + k * 10));
+  });
+  g.textAlign = 'left';
+}
+function drawDonut(cv, segs, opt = {}){
+  if (!cv) return;
+  const { g, w, h } = fit(cv, opt.height || 210);
+  const total = segs.reduce((s, x) => s + x.value, 0) || 1;
+  const cx = w / 2, cy = h / 2 + 4, R = Math.min(w, h) / 2 - 14, r = R * .6;
+  let a = -Math.PI / 2;
+  segs.forEach(s => { const sw = s.value / total * Math.PI * 2;
+    g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, a, a + sw); g.closePath(); g.fillStyle = s.color; g.fill(); a += sw; });
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+  g.globalCompositeOperation = 'source-over';
+  g.textAlign = 'center'; g.fillStyle = '#1b2028'; g.font = '700 17px system-ui';
+  g.fillText(opt.center || String(total), cx, cy + 2);
+  g.fillStyle = '#8d979f'; g.font = '9px system-ui'; g.fillText(opt.sub || 'TOTAL', cx, cy + 16);
+  g.textAlign = 'left';
+}
+
+/* -------------------------------------------------- 10. STUDENT PORTAL ---- */
+$('#stuMenu').onclick = () => openSidebar('#stuSidebar');
+$('#stuBell').onclick = () => renderStudent('notifications');
+$('#stuAvatar').onclick = () => renderStudent('profile');
+$$('#stuSidebar .nav-item').forEach(b => b.onclick = () => {
+  const v = b.dataset.view; closeSidebars();
+  if (v === 'logout') return logoutStudent();
+  renderStudent(v);
+});
+$('#fabAI').onclick = () => { if (CURRENT) renderStudent('assistant'); };
+
+function syncStudentChrome(){
+  const st = CURRENT; if (!st) return;
+  setImg($('#stuAvatar'), st); setImg($('#sideAvatar'), st);
+  $('#sideName').textContent = st.name; $('#sideMat').textContent = st.matric;
+  const u = unreadOf(st);
+  ['#stuBadge', '#navBadge'].forEach(sel => { const e = $(sel); e.hidden = !u; e.textContent = u; });
+}
+function renderStudent(view, replace){
+  if (!CURRENT) return;
+  if (!replace && STU_VIEW !== view) STU_HISTORY.push(STU_VIEW);
+  STU_VIEW = view; resetCharts();
+  $$('#stuSidebar .nav-item').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  syncStudentChrome();
+  const host = $('#stuView');
+  ({ dashboard:vDashboard, results:vResults, studio:vStudio, calculator:vCalculator,
+     notifications:vNotifications, profile:vProfile, assistant:vAssistant, settings:vSettings }[view] || vDashboard)(host);
+  paintIcons(host);
+  wireBack(host, goBackStudent);
+  updateFab();
+  window.scrollTo(0, 0);
+}
+function pageHead(title, sub, right, showBack){
+  return `${showBack === false ? '' : backBtn('Back')}
+    <div class="page-title"><div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div>${right || ''}</div>`;
+}
+function profileStrip(st){
+  const c = cgpaOf(st);
+  return `<div class="profile-strip">
+    <div class="ps-top">
+      ${imgTag(st, 'ps-photo')}
+      <div class="ps-id">
+        <h3>${esc(st.name)}</h3>
+        <div class="mat">${esc(st.matric)}</div>
+        <div class="ps-meta">
+          <span>${I('graduation-cap')} ${esc(st.department)}</span>
+          <span>${I('building')} ${esc(st.faculty)}</span>
+          <span>${I('layers')} ${esc(st.level)} Level</span>
+        </div>
+      </div>
+    </div>
+    <div class="ps-stats">
+      <div class="ps-stat"><small>Current GPA</small><b>${nf(gpaNow(st))}</b></div>
+      <div class="ps-stat"><small>Cumulative GPA</small><b>${nf(c)}</b></div>
+      <div class="ps-stat"><small>Classification</small><b class="sm">${shortClass(c)}</b></div>
+      <div class="ps-stat"><small>Academic Standing</small><b class="sm">${standing(c)}</b></div>
+    </div></div>`;
+}
+function resultTable(t){
+  return `<div class="tablewrap"><table class="rt">
+    <thead><tr><th>Code</th><th>Course Title</th><th class="num">Unit</th><th>Grade</th><th>Remark</th></tr></thead>
+    <tbody>${t.rows.map(r => `<tr>
+      <td data-l="Code" class="mono">${esc(r.code)}</td>
+      <td data-l="Course" class="full">${esc(r.title)}</td>
+      <td data-l="Unit" class="num">${r.unit}</td>
+      <td data-l="Grade"><span class="gradepill g${r.grade}">${r.grade}</span></td>
+      <td data-l="Remark">${REMARK[r.grade]}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td data-l="Total" class="full"><b>Total credit units: ${t.unit}</b></td>
+      <td data-l="GPA"><b>GPA ${nf(t.gpa)}</b></td><td data-l="CGPA"><b>CGPA ${nf(t.cgpa)}</b></td>
+      <td data-l="" class="num"></td><td data-l=""></td></tr></tfoot>
+  </table></div>`;
+}
+/* ---- Dashboard ---- */
+function vDashboard(host){
+  const st = CURRENT, terms = termsOf(st), t = latestTerm(st);
+  const prev = terms.length > 1 ? terms[terms.length - 2] : null, delta = prev && t ? t.gpa - prev.gpa : 0;
+  const all = terms.flatMap(x => x.rows), passed = all.filter(r => r.grade !== 'F').length;
+  host.innerHTML = `
+    ${profileStrip(st)}
+    <div class="grid g-4" style="margin-bottom:1rem">
+      <div class="tile"><div class="ic">${I('trending-up')}</div><b>${nf(t ? t.gpa : 0)}</b><small>Last Semester GPA</small>
+        <div class="delta ${delta > 0 ? 'up' : delta < 0 ? 'dn' : 'flat'}">${I(delta > 0 ? 'trending-up' : delta < 0 ? 'trending-down' : 'minus')} ${nf(Math.abs(delta))} vs previous</div></div>
+      <div class="tile gold"><div class="ic">${I('trophy')}</div><b>${nf(cgpaOf(st))}</b><small>Cumulative GPA</small>
+        <div class="delta flat">${shortClass(cgpaOf(st))}</div></div>
+      <div class="tile"><div class="ic">${I('layers')}</div><b>${t ? t.cumUnit : 0}</b><small>Credit Units</small>
+        <div class="delta flat">${terms.length} semester${terms.length === 1 ? '' : 's'}</div></div>
+      <div class="tile"><div class="ic">${I('check-circle')}</div><b>${passed}/${all.length}</b><small>Courses Passed</small>
+        <div class="delta ${passed === all.length ? 'up' : 'dn'}">${all.length ? nf(passed / all.length * 100, 0) : 0}% success</div></div>
+    </div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>CGPA Progression</h3><span class="pill">5.00 scale</span></div>
+        <div class="chartbox"><canvas id="cvProg"></canvas></div></div>
+      <div class="card"><div class="card-h"><h3>Semester Comparison</h3><span class="pill gold">${terms.length} terms</span></div>
+        <div class="chartbox"><canvas id="cvSem"></canvas></div></div>
+    </div>
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Latest Result — ${t ? esc(t.label) : 'N/A'}</h3>
+        <button class="btn sm ghost" data-go="results">${I('file-text')} Open viewer</button></div>
+        ${t ? resultTable(t) : '<div class="empty">No results published yet.</div>'}</div>
+      <div>
+        <div class="card" style="margin-bottom:1rem"><div class="card-h"><h3>Announcements</h3><span class="pill grey">${DB.announcements.length}</span></div>
+          <ul class="timeline">${DB.announcements.slice(0, 3).map(a => `<li><div class="tico gold">${I('megaphone')}</div>
+            <div class="tbody"><b>${esc(a.title)}</b><small>${esc(a.tag)} · ${esc(a.date)}</small><p>${esc(a.body)}</p></div></li>`).join('')}</ul></div>
+        <div class="card"><div class="card-h"><h3>Quick Actions</h3></div>
+          <div class="btn-row">
+            <button class="btn sm" data-go="results">${I('file-text')} Check Result</button>
+            <button class="btn sm gold" data-go="calculator">${I('calculator')} Calculate CGPA</button>
+            <button class="btn sm ghost" data-go="studio">${I('bar-chart')} CGPA Studio</button>
+            <button class="btn sm ghost" data-go="assistant">${I('bot')} AI Assistant</button>
+            <button class="btn sm ghost" id="qPrint">${I('printer')} Print Transcript</button>
+          </div></div>
+      </div>
+    </div>`;
+  chart(() => drawLine($('#cvProg'), terms.map(x => x.semester[0] + x.session.slice(2, 4)), terms.map(x => x.cgpa)));
+  chart(() => drawBars($('#cvSem'), terms.map(x => x.semester + '\n' + x.session.slice(0, 4)), terms.map(x => x.gpa), { colors:terms.map(() => '#c8a24a') }));
+  $$('[data-go]', host).forEach(b => b.onclick = () => renderStudent(b.dataset.go));
+  $('#qPrint').onclick = () => printTranscript(st, 'ALL', 'ALL');
+}
+/* ---- Results ---- */
+function vResults(host){
+  const st = CURRENT, sessions = sessionsOf(st);
+  host.innerHTML = pageHead('My Results', 'Approved semester results published by the Examinations Office.', `<span class="pill">${I('shield-check')} Senate Approved</span>`) + `
+    <div class="card">
+      <div class="toolbar">
+        <div class="field"><label for="rSess">Session</label><select class="input" id="rSess">${sessions.map(s => `<option>${s}</option>`).join('')}</select></div>
+        <div class="field"><label for="rSem">Semester</label><select class="input" id="rSem"><option>First</option><option>Second</option><option value="ALL">All (Full Session)</option></select></div>
+        <button class="btn" id="rGo">${I('search')} View Result</button>
+      </div>
+      <div id="rOut"></div>
+    </div>`;
+  const sessSel = $('#rSess'), semSel = $('#rSem');
+  if (sessions.length) sessSel.value = sessions[sessions.length - 1];
+  semSel.value = 'Second';
+  const run = () => {
+    const sess = sessSel.value, sem = semSel.value;
+    const terms = termsOf(st).filter(t => t.session === sess && (sem === 'ALL' || t.semester === sem));
+    const out = $('#rOut');
+    if (!terms.length){ out.innerHTML = '<div class="empty">No result has been published for this selection.</div>'; return; }
+    const last = terms[terms.length - 1], agg = gpaOf(terms.flatMap(t => t.rows));
+    out.innerHTML = terms.map(t => `<h4 style="margin:1rem 0 .5rem">${esc(t.session)} · ${esc(t.semester)} Semester</h4>${resultTable(t)}`).join('') + `
+      <div class="grid g-4" style="margin-top:1rem">
+        <div class="tile"><small>${sem === 'ALL' ? 'Session GPA' : 'Semester GPA'}</small><b>${nf(agg.gpa)}</b></div>
+        <div class="tile"><small>Credit Units</small><b>${agg.unit}</b></div>
+        <div class="tile gold"><small>Cumulative GPA</small><b>${nf(last.cgpa)}</b></div>
+        <div class="tile"><small>Classification</small><b style="font-size:1rem">${shortClass(last.cgpa)}</b></div>
+      </div>
+      <div class="notice info" style="margin-top:1rem">${I('award')}<span><b>${classify(last.cgpa)}</b> — ${standing(last.cgpa)}. Grading scale: A = 5, B = 4, C = 3, D = 2, E = 1, F = 0.</span></div>
+      <div class="btn-row">
+        <button class="btn" id="rPrint">${I('printer')} Print</button>
+        <button class="btn gold" id="rPdf">${I('download')} Download PDF</button>
+        <button class="btn ghost" id="rVerify">${I('scan-line')} Verify</button>
+      </div>`;
+    paintIcons(out);
+    $('#rPrint').onclick = () => printTranscript(st, sess, sem);
+    $('#rPdf').onclick = () => downloadPdf(st, sess, sem);
+    $('#rVerify').onclick = () => showVerify(mintToken(st, sess, sem, last.cgpa));
+  };
+  $('#rGo').onclick = run; sessSel.onchange = run; semSel.onchange = run;
+  run();
+}
+/* ---- CGPA Studio ---- */
+function vStudio(host){
+  const st = CURRENT, terms = termsOf(st), all = terms.flatMap(t => t.rows);
+  const colors = { A:'#0b5d3b', B:'#2f8f63', C:'#c8a24a', D:'#d98b3a', E:'#b8623a', F:'#b3261e' };
+  const dist = ['A','B','C','D','E','F'].map(g => ({ g, n:all.filter(r => r.grade === g).length }));
+  const c = cgpaOf(st), lastT = terms[terms.length - 1] || { cumUnit:0, cumPoint:0 };
+  const best = terms.reduce((a, b) => (!a || b.gpa > a.gpa) ? b : a, null) || { gpa:0, label:'—' };
+  const remaining = 6, target = 4.5;
+  const need = (target * (lastT.cumUnit + remaining * 17) - lastT.cumPoint) / (remaining * 17);
+  const badges = [
+    { on:c >= 4.5, i:'trophy', t:'First Class Track', d:'CGPA of 4.50 and above' },
+    { on:all.length > 0 && all.every(r => r.grade !== 'F'), i:'shield-check', t:'No Carry-Over', d:'Passed every registered course' },
+    { on:dist[0].n >= 5, i:'sparkles', t:'Grade A Collector', d:'Five or more A grades' },
+    { on:terms.length >= 2 && terms[terms.length-1].gpa >= terms[0].gpa, i:'trending-up', t:'Consistent Improver', d:'GPA maintained or improved' },
+    { on:lastT.cumUnit >= 60, i:'layers', t:'Credit Milestone', d:'60+ credit units earned' },
+    { on:c >= 3.5, i:'award', t:'Dean’s Consideration', d:'CGPA of 3.50 and above' }
+  ];
+  host.innerHTML = pageHead('CGPA Studio', 'Analytics, trends and projections for your academic record.', `<span class="pill gold">${terms.length} semesters</span>`) + `
+    <div class="grid g-4" style="margin-bottom:1rem">
+      <div class="tile"><div class="ic">${I('target')}</div><b>${nf(c)}</b><small>Cumulative GPA</small></div>
+      <div class="tile gold"><div class="ic">${I('trending-up')}</div><b>${nf(best.gpa)}</b><small>Best Semester</small><div class="delta flat">${esc(best.label)}</div></div>
+      <div class="tile"><div class="ic">${I('layers')}</div><b>${lastT.cumUnit}</b><small>Credit Units</small></div>
+      <div class="tile"><div class="ic">${I('award')}</div><b style="font-size:1.05rem">${shortClass(c)}</b><small>Classification</small></div>
+    </div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Academic Progress</h3><span class="pill">CGPA trend</span></div>
+        <div class="chartbox"><canvas id="s1"></canvas></div>
+        <div class="legend"><span><i style="background:#0b5d3b"></i>Cumulative GPA</span></div></div>
+      <div class="card"><div class="card-h"><h3>Semester Comparison</h3><span class="pill gold">GPA per term</span></div>
+        <div class="chartbox"><canvas id="s2"></canvas></div></div>
+    </div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Grade Distribution</h3></div>
+        <div class="chartbox"><canvas id="s3"></canvas></div>
+        <div class="legend">${dist.map(d => `<span><i style="background:${colors[d.g]}"></i>${d.g} (${d.n})</span>`).join('')}</div></div>
+      <div class="card"><div class="card-h"><h3>Credit Units per Semester</h3></div>
+        <div class="chartbox"><canvas id="s4"></canvas></div></div>
+    </div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Prediction Engine</h3><span class="pill">Target ${nf(target)}</span></div>
+        <p class="hint">Based on ${remaining} projected semesters at 17 credit units each.</p>
+        <div class="kv"><span>Required average GPA for First Class</span><b>${need > 5 ? 'Not attainable' : nf(Math.max(0, need))}</b></div>
+        <div class="spread" style="margin:.8rem 0 .3rem"><small>Progress towards ${nf(target)}</small><small>${nf(Math.min(100, c / target * 100), 0)}%</small></div>
+        <div class="bar gold"><i style="width:${Math.min(100, c / target * 100)}%"></i></div>
+        <div class="notice info" style="margin-top:.9rem">${I('sparkles')}<span>${need > 5
+          ? 'A First Class is no longer mathematically reachable. Aim for a strong Second Class Upper by sustaining a GPA above 4.00.'
+          : need <= c ? 'You are already on track. Maintain your current performance to graduate in this class.'
+          : `Score an average of <b>${nf(need)}</b> per semester from now to reach a First Class.`}</span></div></div>
+      <div class="card"><div class="card-h"><h3>Classification Bands</h3></div>
+        ${[['First Class','4.50 – 5.00',4.5],['Second Class Upper','3.50 – 4.49',3.5],['Second Class Lower','2.40 – 3.49',2.4],['Third Class','1.50 – 2.39',1.5],['Pass','1.00 – 1.49',1]].map(([n, r, v]) => `
+          <div class="spread" style="padding:.5rem 0;border-bottom:1px dashed var(--line)">
+            <div><b style="font-size:.92rem">${n}</b><br /><small class="hint mono">${r}</small></div>
+            <span class="pill ${c >= v ? '' : 'grey'}">${c >= v ? 'Attained' : 'Locked'}</span></div>`).join('')}</div>
+    </div>
+    <div class="card" style="margin-bottom:1rem"><div class="card-h"><h3>Achievements</h3>
+      <span class="pill">${badges.filter(b => b.on).length}/${badges.length} unlocked</span></div>
+      <div class="grid g-3">${badges.map(b => `<div class="tile" style="opacity:${b.on ? 1 : .48}">
+        <div class="ic">${I(b.i)}</div><b style="font-size:1rem">${b.t}</b><small>${b.d}</small>
+        <div class="delta ${b.on ? 'up' : 'flat'}">${b.on ? 'Unlocked' : 'Locked'}</div></div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h3>Academic Summary</h3>
+      <button class="btn sm ghost" id="sPrint">${I('printer')} Print full transcript</button></div>
+      <div class="tablewrap"><table class="rt">
+        <thead><tr><th>Session</th><th>Semester</th><th class="num">Units</th><th class="num">Points</th><th class="num">GPA</th><th class="num">CGPA</th><th>Class</th></tr></thead>
+        <tbody>${terms.map(t => `<tr>
+          <td data-l="Session">${t.session}</td><td data-l="Semester">${t.semester}</td>
+          <td data-l="Units" class="num">${t.unit}</td><td data-l="Points" class="num">${nf(t.point, 1)}</td>
+          <td data-l="GPA" class="num"><b>${nf(t.gpa)}</b></td><td data-l="CGPA" class="num">${nf(t.cgpa)}</td>
+          <td data-l="Class"><span class="pill grey">${shortClass(t.cgpa)}</span></td></tr>`).join('')}</tbody></table></div></div>`;
+  chart(() => drawLine($('#s1'), terms.map(t => t.semester[0] + t.session.slice(2, 4)), terms.map(t => t.cgpa)));
+  chart(() => drawBars($('#s2'), terms.map(t => t.semester + '\n' + t.session.slice(0, 4)), terms.map(t => t.gpa), { colors:terms.map(() => '#0b5d3b') }));
+  chart(() => drawDonut($('#s3'), dist.filter(d => d.n).map(d => ({ value:d.n, color:colors[d.g] })), { center:String(all.length), sub:'COURSES' }));
+  chart(() => drawBars($('#s4'), terms.map(t => t.semester + '\n' + t.session.slice(0, 4)), terms.map(t => t.unit),
+    { max:Math.max(20, ...terms.map(t => t.unit)), colors:terms.map(() => '#c8a24a'), fmt:v => String(v) }));
+  $('#sPrint').onclick = () => printTranscript(st, 'ALL', 'ALL');
+}
+/* ---- CGPA Calculator ---- */
+function vCalculator(host){
+  const st = CURRENT, lt = latestTerm(st);
+  host.innerHTML = pageHead('CGPA Calculator', 'Plan ahead — enter courses, units and expected grades.', `<span class="pill">5.00 scale</span>`) + `
+    <div class="notice info">${I('info')}<span>Results compute instantly as you type. Your existing record (CGPA <b>${nf(cgpaOf(st))}</b>, <b>${lt ? lt.cumUnit : 0}</b> units) can be blended in below.</span></div>
+    <div class="grid g-2">
+      ${[1, 2].map(n => `<div class="card"><div class="card-h"><h3>${n === 1 ? 'First' : 'Second'} Semester</h3>
+        <button class="btn sm ghost" data-add="${n}">${I('plus')} Add course</button></div>
+        <div id="rows${n}"></div>
+        <div class="spread" style="margin-top:.6rem"><span class="hint">Units: <b id="u${n}">0</b></span><span class="pill">GPA <b id="g${n}">0.00</b></span></div></div>`).join('')}
+    </div>
+    <div class="card mt1"><div class="card-h"><h3>Computed Summary</h3>
+      <label class="check"><input type="checkbox" id="blend" /> Include my existing record</label></div>
+      <div class="calc-summary">
+        <div class="tile"><small>First Semester GPA</small><b id="oG1">0.00</b></div>
+        <div class="tile"><small>Second Semester GPA</small><b id="oG2">0.00</b></div>
+        <div class="tile gold"><small>Year GPA</small><b id="oYear">0.00</b></div>
+        <div class="tile"><small>Overall CGPA</small><b id="oCgpa">0.00</b></div>
+      </div>
+      <div class="notice" style="margin-top:1rem">${I('award')}<span>Projected classification: <b id="oClass">—</b> · Total units: <b id="oUnits">0</b></span></div>
+      <div class="btn-row">
+        <button class="btn" id="cPrint">${I('printer')} Print</button>
+        <button class="btn gold" id="cSave">${I('save')} Save</button>
+        <button class="btn ghost" id="cReset">${I('rotate-ccw')} Reset</button>
+      </div></div>
+    <div class="card mt1"><div class="card-h"><h3>Saved Calculations</h3><span class="pill grey">${(st.calcSaves || []).length}</span></div>
+      <div id="savedList"></div></div>`;
+  const mkRow = (n, d = {}) => {
+    const w = document.createElement('div'); w.className = 'calc-row';
+    w.innerHTML = `<input class="input" placeholder="Course title / code" value="${esc(d.title || '')}" data-f="title" aria-label="Course title" />
+      <input class="input" type="number" min="0" max="12" inputmode="numeric" placeholder="Units" value="${d.unit != null ? d.unit : ''}" data-f="unit" aria-label="Credit units" />
+      <select class="input" data-f="grade" aria-label="Grade">${['A','B','C','D','E','F'].map(g => `<option ${d.grade === g ? 'selected' : ''}>${g}</option>`).join('')}</select>
+      <button class="rm" aria-label="Remove course">${I('trash')}</button>`;
+    w.querySelector('.rm').onclick = () => { w.remove(); compute(); };
+    w.addEventListener('input', compute); w.addEventListener('change', compute);
+    $('#rows' + n).appendChild(w);
+  };
+  const read = n => $$('#rows' + n + ' .calc-row').map(w => ({
+    title:w.querySelector('[data-f="title"]').value.trim(),
+    unit:Number(w.querySelector('[data-f="unit"]').value) || 0,
+    grade:w.querySelector('[data-f="grade"]').value })).filter(r => r.unit > 0);
+  function compute(){
+    const a = gpaOf(read(1)), b = gpaOf(read(2));
+    $('#u1').textContent = a.unit; $('#u2').textContent = b.unit;
+    $('#g1').textContent = nf(a.gpa); $('#g2').textContent = nf(b.gpa);
+    $('#oG1').textContent = nf(a.gpa); $('#oG2').textContent = nf(b.gpa);
+    const yu = a.unit + b.unit, yp = a.point + b.point, year = yu ? yp / yu : 0;
+    $('#oYear').textContent = nf(year);
+    let cu = yu, cp = yp;
+    if ($('#blend').checked && lt){ cu += lt.cumUnit; cp += lt.cumPoint; }
+    const cg = cu ? cp / cu : 0;
+    $('#oCgpa').textContent = nf(cg); $('#oClass').textContent = cu ? classify(cg) : '—'; $('#oUnits').textContent = cu;
+    return { a, b, year, cg, cu };
+  }
+  $$('[data-add]', host).forEach(b => b.onclick = () => { mkRow(b.dataset.add); paintIcons($('#rows' + b.dataset.add)); compute(); });
+  $('#blend').onchange = compute;
+  $('#cReset').onclick = () => { ['1','2'].forEach(n => $('#rows' + n).innerHTML = ''); seed(); compute(); toast('Calculator reset.'); };
+  $('#cSave').onclick = () => {
+    const r = compute();
+    if (!r.cu) return toast('Add at least one course with credit units.', 'warn');
+    st.calcSaves = st.calcSaves || [];
+    st.calcSaves.unshift({ id:uid('s'), date:nowStr(), first:read(1), second:read(2), year:r.year, cgpa:r.cg, units:r.cu });
+    if (st.calcSaves.length > 8) st.calcSaves.length = 8;
+    saveDB(); renderSaved(); toast('Calculation saved to your portal.', 'ok');
+  };
+  $('#cPrint').onclick = () => {
+    const r = compute();
+    printSimple('CGPA Projection Worksheet', `
+      <div class="doc-bio"><div><span>Name</span><b>${esc(st.name)}</b></div><div><span>Matric No</span><b>${esc(st.matric)}</b></div>
+        <div><span>Department</span><b>${esc(st.department)}</b></div><div><span>Generated</span><b>${todayStr()}</b></div></div>
+      ${['First','Second'].map((lbl, i) => { const rows = read(i + 1); return !rows.length ? '' : `
+        <h4 class="sec">${lbl} Semester</h4><table class="doc-t"><thead><tr><th>Course</th><th>Unit</th><th>Grade</th><th>Point</th></tr></thead>
+        <tbody>${rows.map(x => `<tr><td>${esc(x.title || '—')}</td><td>${x.unit}</td><td>${x.grade}</td><td>${x.unit * GP[x.grade]}</td></tr>`).join('')}</tbody></table>`; }).join('')}
+      <div class="doc-sum"><div><small>Year GPA</small><b>${nf(r.year)}</b></div><div><small>Overall CGPA</small><b>${nf(r.cg)}</b></div>
+        <div><small>Total Units</small><b>${r.cu}</b></div><div><small>Class</small><b style="font-size:9.5px">${shortClass(r.cg)}</b></div></div>
+      <div class="doc-note">This worksheet is a personal projection generated by the IBBUL CGPA Calculator. It is not an official statement of result.</div>`);
+  };
+  function renderSaved(){
+    const list = st.calcSaves || [];
+    $('#savedList').innerHTML = !list.length ? '<div class="empty">No saved calculations yet.</div>' :
+      `<ul class="timeline">${list.map(s => `<li><div class="tico">${I('calculator')}</div>
+        <div class="tbody"><b>CGPA ${nf(s.cgpa)} · Year GPA ${nf(s.year)}</b><small>${esc(s.date)} · ${s.units} units · ${shortClass(s.cgpa)}</small></div>
+        <button class="btn sm ghost" data-load="${s.id}">Load</button></li>`).join('')}</ul>`;
+    paintIcons($('#savedList'));
+    $$('[data-load]').forEach(b => b.onclick = () => {
+      const s = st.calcSaves.find(x => x.id === b.dataset.load);
+      ['1','2'].forEach(n => $('#rows' + n).innerHTML = '');
+      (s.first || []).forEach(r => mkRow(1, r)); (s.second || []).forEach(r => mkRow(2, r));
+      paintIcons(host); compute(); toast('Saved calculation loaded.');
+    });
+  }
+  function seed(){ for (let i = 0; i < 3; i++){ mkRow(1); mkRow(2); } paintIcons(host); }
+  seed(); compute(); renderSaved();
+}
+/* ---- Notifications ---- */
+function vNotifications(host){
+  const st = CURRENT, ico = { result:['file-check',''], cgpa:['trending-up','gold'], announcement:['megaphone','gold'], deadline:['clock','red'], security:['lock',''] };
+  host.innerHTML = pageHead('Notifications', 'Result publications, CGPA changes, announcements and deadlines.',
+    `<button class="btn sm ghost" id="markAll">${I('check')} Mark all as read</button>`) + `
+    <div class="card">${!st.notifications.length ? '<div class="empty">You have no notifications.</div>' :
+      `<ul class="timeline">${st.notifications.map(n => { const k = ico[n.type] || ['bell','']; return `
+        <li class="${n.read ? '' : 'unread'}"><div class="tico ${k[1]}">${I(k[0])}</div>
+        <div class="tbody"><b>${esc(n.title)}</b><small>${esc(n.date)}</small><p>${esc(n.body)}</p></div>
+        ${n.read ? '' : '<span class="pill">New</span>'}</li>`; }).join('')}</ul>`}</div>
+    <div class="card mt1"><div class="card-h"><h3>University Announcements</h3></div>
+      <ul class="timeline">${DB.announcements.map(a => `<li><div class="tico gold">${I('megaphone')}</div>
+        <div class="tbody"><b>${esc(a.title)}</b><small>${esc(a.tag)} · ${esc(a.date)}</small><p>${esc(a.body)}</p></div></li>`).join('')}</ul></div>`;
+  $('#markAll').onclick = () => { st.notifications.forEach(n => n.read = true); saveDB(); renderStudent('notifications', true); toast('All notifications marked as read.', 'ok'); };
+}
+/* ---- Profile ---- */
+function vProfile(host){
+  const st = CURRENT, t = latestTerm(st);
+  const row = (k, v) => `<div class="kv"><span>${k}</span><b>${esc(v)}</b></div>`;
+  host.innerHTML = pageHead('Profile', 'Your official student record as held by the University.',
+    `<span class="pill grey">${I('lock')} Read only</span>`) + profileStrip(st) + `
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Biodata</h3></div>
+        ${row('Full Name', st.name)}${row('Matric Number', st.matric)}${row('Faculty', st.faculty)}
+        ${row('Department', st.department)}${row('Level', st.level + ' Level')}${row('Year of Entry', st.entryYear)}
+        ${row('E-mail', st.email)}${row('Phone', st.phone)}
+        <div class="notice" style="margin-top:1rem">${I('lock')}<span>Your name, passport photograph and results are maintained by the Registry and <b>cannot be edited by students</b>. Report any discrepancy to the Faculty Officer.</span></div></div>
+      <div>
+        <div class="card" style="margin-bottom:1rem"><div class="card-h"><h3>Academic Status</h3></div>
+          ${row('Current GPA', nf(gpaNow(st)))}${row('Cumulative GPA', nf(cgpaOf(st)))}
+          ${row('Credit Units Earned', t ? t.cumUnit : 0)}${row('Classification', classify(cgpaOf(st)))}
+          ${row('Academic Standing', standing(cgpaOf(st)))}</div>
+        <div class="card"><div class="card-h"><h3>Security</h3></div>
+          <p class="hint">The only detail you may modify is your portal password.</p>
+          <button class="btn" id="pChange">${I('key')} Change Password</button></div>
+      </div></div>`;
+  $('#pChange').onclick = changePasswordDialog;
+}
+/* ---- Settings ---- */
+function applySettings(){
+  document.documentElement.dataset.density = DB.settings.density;
+  document.documentElement.dataset.motion = DB.settings.motion;
+}
+function vSettings(host){
+  const s = DB.settings;
+  host.innerHTML = pageHead('Settings', 'Personalise how the portal behaves on this device.') + `
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Appearance</h3></div>
+        <div class="spread" style="padding:.6rem 0;border-bottom:1px dashed var(--line)">
+          <div><b>Compact density</b><br /><small class="hint">Reduce spacing and text size</small></div>
+          <label class="check"><input type="checkbox" id="setDensity" ${s.density === 'compact' ? 'checked' : ''} /></label></div>
+        <div class="spread" style="padding:.6rem 0">
+          <div><b>Motion &amp; animation</b><br /><small class="hint">Disable for reduced motion</small></div>
+          <label class="check"><input type="checkbox" id="setMotion" ${s.motion === 'on' ? 'checked' : ''} /></label></div></div>
+      <div class="card"><div class="card-h"><h3>Account &amp; Data</h3></div>
+        <div class="btn-row">
+          <button class="btn" id="setPass">${I('key')} Change Password</button>
+          <button class="btn ghost" id="setExport">${I('download')} Export My Record</button>
+          <button class="btn ghost danger" id="setReset">${I('rotate-ccw')} Reset Demo Data</button>
+          <button class="btn ghost" id="setOut">${I('power')} Sign Out</button></div>
+        <div class="notice" style="margin-top:1rem">${I('alert-triangle')}<span>Resetting restores the original ten demonstration students and erases every change made in this browser, including uploaded photographs.</span></div></div>
+    </div>
+    <div class="card mt1"><div class="card-h"><h3>About</h3></div>
+      <p class="hint mb0">IBBUL Results Checker &amp; CGPA Calculator · Version 2.0<br />
+      HTML, CSS and Vanilla JavaScript · Directorate of ICT, Ibrahim Badamasi Babangida University, Lapai.</p></div>`;
+  $('#setDensity').onchange = e => { s.density = e.target.checked ? 'compact' : 'normal'; applySettings(); saveDB(); };
+  $('#setMotion').onchange = e => { s.motion = e.target.checked ? 'on' : 'off'; applySettings(); saveDB(); };
+  $('#setPass').onclick = changePasswordDialog;
+  $('#setOut').onclick = logoutStudent;
+  $('#setExport').onclick = () => openModal({ title:'Your academic record', icon:'database',
+    body:`<textarea class="input" style="min-height:260px" readonly>${esc(JSON.stringify({ ...CURRENT, password:'••••••', photo:CURRENT.photo ? '[image data]' : null }, null, 2))}</textarea>
+      <p class="hint">Copy the text above to keep a personal backup.</p>`, actions:[{ label:'Close', cls:'ghost' }] });
+  $('#setReset').onclick = () => confirmModal({ title:'Reset demo data', message:'This erases all local changes and reloads the original dataset. Continue?',
+    confirmLabel:'Reset', onYes(){ try { localStorage.removeItem(LS_KEY); } catch (e){} location.reload(); } });
+}
+/* ---- AI Assistant ---- */
+const KB = [
+  { k:['hello','hi','hey','good morning','good afternoon','good evening','salam'], a:"Hello! I'm the IBBUL Portal Assistant. I can guide you around the portal, explain your results, or show how CGPA is calculated. What would you like to do?" },
+  { k:['check result','my result','view result','see result','result'], a:"To check your result: open the menu → **My Results**, choose your **Session** and **Semester**, then tap **View Result**. You'll see each course, unit, grade, remark, your semester GPA, CGPA and classification." },
+  { k:['cgpa','gpa','calculate','calculation','compute'], a:"GPA = total grade points ÷ total credit units on a 5.00 scale (A=5, B=4, C=3, D=2, E=1, F=0). CGPA combines all semesters. Use **CGPA Calculator** to model future results or **CGPA Studio** for your trend and projections." },
+  { k:['class','classification','first class','division','degree'], a:"Classification bands: **First Class** 4.50–5.00 · **Second Class Upper** 3.50–4.49 · **Second Class Lower** 2.40–3.49 · **Third Class** 1.50–2.39 · **Pass** 1.00–1.49." },
+  { k:['print','pdf','download','transcript','statement'], a:"Open **My Results**, select session and semester, then tap **Print** for the official transcript layout, or **Download PDF** and choose *Save as PDF* as the destination. Every printout carries a QR verification code." },
+  { k:['qr','verify','verification','authentic','fake'], a:"Each printed result carries a QR code linking to a verification page showing the student's name, matric number, CGPA, session and generation date. You can also tap **Verify** in the result viewer." },
+  { k:['navigate','menu','sidebar','where','navigation','back'], a:"Tap the **Menu** button at the top-left for the sidebar, or use the **Back** button at the top of any page to return to where you came from. The floating assistant button stays available on every page." },
+  { k:['notification','alert','announcement','news'], a:"Notifications appear under the bell icon and in the **Notifications** page — new results, CGPA updates, announcements and deadlines. Use *Mark all as read* to clear the badge." },
+  { k:['edit profile','change name','change picture','update passport','profile picture','photo'], a:"Students cannot change their name, passport photograph or results — those are managed by the Registry through the Admin Portal. You may only change your **password**." },
+  { k:['change password','password change','new password','reset password'], a:"Go to **Profile → Change Password** or **Settings**. You need your current password and a new one of at least 6 characters. At first login the portal requires you to replace the temporary password." },
+  { k:['carry over','fail','failed','f grade','repeat'], a:"An **F** grade means the course must be repeated. It still counts 0 points against your credit units until passed, which lowers your CGPA — clear carry-overs early." },
+  { k:['unit','credit','credit unit','load'], a:"Credit units measure a course's weight. GPA multiplies each course's units by its grade point, sums them, then divides by the total units for that semester." },
+  { k:['contact','support','help desk','ict','office'], a:"For account or result issues contact the **Directorate of ICT** (Admin Block, Room 12) or e-mail **ict@ibbul.edu.ng** with your matric number." },
+  { k:['about','portal','what is this','website','who are you'], a:"This is the official IBBUL Results Checker & CGPA Calculator — check approved results, track CGPA, project future performance and print QR-verifiable transcripts." },
+  { k:['thank','thanks','shukran'], a:"You're very welcome. Ask me anything else about the portal." },
+  { k:['bye','goodbye','see you'], a:"Goodbye, and best wishes with your studies." }
+];
+const BLOCKED = ['password of','admin password','administrator password','what is my password','tell me the password','admin login','hack','bypass','other student','someone else result','change my grade','change my result','upgrade my cgpa'];
+function botReply(raw){
+  const q = raw.toLowerCase().trim();
+  if (BLOCKED.some(b => q.includes(b)))
+    return "I can't help with that. For security I never reveal passwords, administrator credentials or another student's records. If you've forgotten your password, contact the Directorate of ICT.";
+  if (CURRENT && /(cgpa|gpa)/.test(q) && /(my|what|how much|show|current)/.test(q))
+    return `Your current CGPA is **${nf(cgpaOf(CURRENT))}** and your last semester GPA is **${nf(gpaNow(CURRENT))}** — that places you in ${classify(cgpaOf(CURRENT))} (${standing(cgpaOf(CURRENT))}).`;
+  let best = null, score = 0;
+  KB.forEach(it => { let s = 0; it.k.forEach(k => { if (q.includes(k)) s += k.split(' ').length * 2 + 1; }); if (s > score){ score = s; best = it; } });
+  return best ? best.a : "I'm focused on this portal only — results, CGPA, printing, verification, notifications and navigation. Try: *How do I check my result?*, *How is CGPA calculated?* or *How do I print my transcript?*";
+}
+function vAssistant(host){
+  host.innerHTML = `<div class="page-title"><div><h2>AI Assistant</h2><p>Portal guidance, result help and CGPA explanations.</p></div><span class="pill">${I('bot')} Online</span></div>
+    <div class="chat">
+      <div class="chat-head">
+        <button class="backbtn on-dark" data-back="1" style="margin:0;min-height:38px;padding:.32rem .8rem">${I('arrow-left')}<span>Back</span></button>
+        <div class="avatar-ai">${I('bot')}</div>
+        <div style="min-width:0"><b>IBBUL Portal Assistant</b><small>Answers questions about this portal only</small></div>
+        <span class="live"><i></i> Live</span>
+      </div>
+      <div class="chat-body" id="chatBody"></div>
+      <div class="chips" id="chips"></div>
+      <form class="chat-in" id="chatForm"><input class="input" id="chatIn" placeholder="Ask about results, CGPA, printing…" autocomplete="off" aria-label="Message" />
+        <button class="btn" type="submit" aria-label="Send">${I('send')}</button></form>
+    </div>`;
+  const body = $('#chatBody');
+  const add = (who, text) => {
+    const d = document.createElement('div'); d.className = 'msg ' + who;
+    d.innerHTML = (who === 'me' ? esc(text) : text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>')) +
+      `<span class="t">${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>`;
+    body.appendChild(d); body.scrollTop = body.scrollHeight; return d;
+  };
+  const ask = q => { add('me', q);
+    const t = document.createElement('div'); t.className = 'msg bot'; t.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+    body.appendChild(t); body.scrollTop = body.scrollHeight;
+    setTimeout(() => { t.remove(); add('bot', botReply(q)); }, 520 + Math.random() * 600); };
+  ['How do I check my result?','How is CGPA calculated?','What is my CGPA?','How do I print my transcript?','What does the QR code do?','How do I change my password?']
+    .forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.textContent = c; b.onclick = () => ask(c); $('#chips').appendChild(b); });
+  $('#chatForm').onsubmit = e => { e.preventDefault(); const v = $('#chatIn').value.trim(); if (!v) return; $('#chatIn').value = ''; ask(v); };
+  setTimeout(() => add('bot', `Good day ${CURRENT ? esc(CURRENT.name.split(' ')[0]) : 'there'} — I'm the IBBUL Portal Assistant. Ask how to check results, understand your CGPA, print a transcript or navigate the portal. Pick a suggestion below to begin.`), 300);
+}
+
+/* ------------------------------------------ 11. VERIFICATION & PRINTING ---- */
+function mintToken(st, sess, sem, cgpa){
+  const tok = 'IBB' + st.matric.slice(-4) + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+  DB.verifications[tok] = { name:st.name, matric:st.matric, cgpa:nf(cgpa),
+    session:sess === 'ALL' ? 'All Sessions' : sess, semester:sem === 'ALL' ? 'Full Record' : sem + ' Semester',
+    department:st.department, faculty:st.faculty, level:st.level, classification:classify(cgpa), date:nowStr() };
+  saveDB(); return tok;
+}
+const verifyURL = tok => location.href.split('#')[0] + '#verify=' + tok;
+function showVerify(tok){
+  const v = DB.verifications[tok], card = $('#verifyCard');
+  card.innerHTML = v ? `
+    <div class="verify-head"><img src="logo.png" alt="" onerror="this.style.display='none'" />
+      <h3>Ibrahim Badamasi Babangida University, Lapai</h3>
+      <p style="margin:.2rem 0 0;font-size:.84rem;color:#c7dccf">Statement of Result — Online Verification</p>
+      <div class="seal">${I('shield-check')} VERIFIED — AUTHENTIC</div></div>
+    <div class="verify-body">
+      <div class="kv"><span>Student Name</span><b>${esc(v.name)}</b></div>
+      <div class="kv"><span>Matric Number</span><b class="mono">${esc(v.matric)}</b></div>
+      <div class="kv"><span>Faculty</span><b>${esc(v.faculty)}</b></div>
+      <div class="kv"><span>Department</span><b>${esc(v.department)}</b></div>
+      <div class="kv"><span>Level</span><b>${esc(v.level)} Level</b></div>
+      <div class="kv"><span>Session</span><b>${esc(v.session)}</b></div>
+      <div class="kv"><span>Semester</span><b>${esc(v.semester)}</b></div>
+      <div class="kv"><span>CGPA</span><b>${esc(v.cgpa)} / 5.00</b></div>
+      <div class="kv"><span>Classification</span><b>${esc(v.classification)}</b></div>
+      <div class="kv"><span>Verification Code</span><b class="mono">${esc(tok)}</b></div>
+      <div class="kv"><span>Generated</span><b>${esc(v.date)}</b></div>
+      <div class="notice info" style="margin-top:1rem">${I('lock')}<span>Issued by the IBBUL Examinations Office and validated against the University's academic register.</span></div>
+      <button class="btn block" id="vBack">${I('arrow-left')} Return to portal</button></div>` : `
+    <div class="verify-head" style="background:linear-gradient(135deg,#7a1c16,#b3261e)"><img src="logo.png" alt="" onerror="this.style.display='none'" />
+      <h3>Verification Failed</h3><div class="seal bad">${I('x-circle')} RECORD NOT FOUND</div></div>
+    <div class="verify-body"><p>The code <b class="mono">${esc(tok)}</b> does not exist in the University register, or it was generated in a different browser.</p>
+      <button class="btn block" id="vBack">${I('arrow-left')} Return to portal</button></div>`;
+  paintIcons(card); show('screen-verify');
+  $('#vBack').onclick = () => { history.replaceState(null, '', location.pathname + location.search);
+    CURRENT ? show('screen-student') : ADMIN ? show('screen-admin') : show('screen-landing'); };
+}
+function routeHash(){ const m = location.hash.match(/verify=([A-Za-z0-9\-]+)/); if (m) showVerify(m[1]); }
+window.addEventListener('hashchange', routeHash);
+
+function transcriptHTML(st, sess, sem, tok){
+  const terms = termsOf(st).filter(t => (sess === 'ALL' || t.session === sess) && (sem === 'ALL' || t.semester === sem));
+  const last = terms[terms.length - 1] || latestTerm(st), agg = gpaOf(terms.flatMap(t => t.rows));
+  const cg = last ? last.cgpa : 0, pic = photoSrc(st);
+  const title = sess === 'ALL' ? 'ACADEMIC TRANSCRIPT — FULL RECORD'
+    : sem === 'ALL' ? `STATEMENT OF RESULT — ${sess} SESSION` : `STATEMENT OF RESULT — ${sem.toUpperCase()} SEMESTER`;
+  return `<div class="doc">
+    <div class="doc-head">
+      <img class="crestimg" src="logo.png" alt="" onerror="this.style.visibility='hidden'" />
+      <div class="ttl"><h1>Ibrahim Badamasi Babangida University, Lapai</h1>
+        <p>P.M.B. 11, Lapai, Niger State, Nigeria</p><p><b>Office of the Registrar — Examinations &amp; Records Division</b></p>
+        <span class="band">${esc(title)}</span></div>
+      ${pic ? `<img class="pp" src="${esc(pic)}" alt="" onerror="this.style.visibility='hidden'" />` : '<div class="pp"></div>'}
+    </div>
+    <div class="doc-bio">
+      <div><span>Name</span><b>${esc(st.name)}</b></div><div><span>Matric No.</span><b>${esc(st.matric)}</b></div>
+      <div><span>Faculty</span><b>${esc(st.faculty)}</b></div><div><span>Department</span><b>${esc(st.department)}</b></div>
+      <div><span>Level</span><b>${esc(st.level)} Level</b></div><div><span>Year of Entry</span><b>${esc(st.entryYear)}</b></div>
+      <div><span>Session</span><b>${sess === 'ALL' ? 'All Sessions' : esc(sess)}</b></div><div><span>Date Issued</span><b>${todayStr()}</b></div>
+    </div>
+    ${terms.map(t => `<h4 class="sec">${esc(t.session)} — ${esc(t.semester)} Semester (${t.rows.length} courses)</h4>
+      <table class="doc-t"><thead><tr><th style="width:34px">S/N</th><th style="width:76px">Code</th><th>Course Title</th>
+        <th style="width:38px">Unit</th><th style="width:42px">Grade</th><th style="width:42px">Point</th><th style="width:70px">Remark</th></tr></thead>
+      <tbody>${t.rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.code)}</td><td>${esc(r.title)}</td>
+        <td>${r.unit}</td><td><b>${r.grade}</b></td><td>${r.unit * GP[r.grade]}</td><td>${REMARK[r.grade]}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3">TOTAL</td><td>${t.unit}</td><td>—</td><td>${nf(t.point, 1)}</td><td>GPA ${nf(t.gpa)}</td></tr></tfoot></table>`).join('')}
+    <div class="doc-sum">
+      <div><small>${sem === 'ALL' ? 'Aggregate GPA' : 'Semester GPA'}</small><b>${nf(agg.gpa)}</b></div>
+      <div><small>Credit Units</small><b>${agg.unit}</b></div>
+      <div><small>Cumulative GPA</small><b>${nf(cg)}</b></div>
+      <div><small>Classification</small><b style="font-size:9.5px">${esc(shortClass(cg))}</b></div></div>
+    <p style="font-size:10px;margin:4px 0"><b>Award Classification:</b> ${esc(classify(cg))} · <b>Academic Standing:</b> ${esc(standing(cg))} · <b>Scale:</b> A=5, B=4, C=3, D=2, E=1, F=0</p>
+    <div class="doc-foot">
+      <div class="sigline"><div class="sign">A. M. Ibrahim</div><hr /><small>Registrar / Secretary to Senate</small></div>
+      <div class="stamp"><div><b>IBBUL</b>Official Seal<br />Examinations &amp; Records<br />Lapai · Niger State</div></div>
+      <div class="qrbox"><canvas id="docQR"></canvas><small>Scan to verify<br /><b>${esc(tok)}</b></small></div>
+    </div>
+    <div class="doc-note">Computer generated by the IBBUL Results Checker &amp; CGPA Calculator; valid only with the official seal and scannable QR code.
+      Verification code <b>${esc(tok)}</b> may be validated at <b>${esc(verifyURL(tok))}</b>. Any alteration renders this statement void. Issued ${todayStr()}.</div>
+  </div>`;
+}
+function printTranscript(st, sess, sem){
+  const terms = termsOf(st).filter(t => (sess === 'ALL' || t.session === sess) && (sem === 'ALL' || t.semester === sem));
+  if (!terms.length) return toast('There is no published result for this selection.', 'warn');
+  const tok = mintToken(st, sess, sem, terms[terms.length - 1].cgpa);
+  $('#printRoot').innerHTML = transcriptHTML(st, sess, sem, tok);
+  try { QR.draw($('#docQR'), verifyURL(tok), 4); } catch (e){}
+  setTimeout(() => window.print(), 280);
+}
+function downloadPdf(st, sess, sem){
+  openModal({ title:'Download as PDF', icon:'download',
+    body:`<div class="notice info">${I('printer')}<span>Your browser's print dialog will open. Choose <b>“Save as PDF”</b> as the destination, set layout to <b>A4 Portrait</b> and enable <b>Background graphics</b> so the seal and watermark render.</span></div>
+      <p class="hint mb0">The file is an exact copy of the official transcript, including the QR verification code.</p>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Continue', cls:'gold', icon:'download', onClick(){ closeModal(); printTranscript(st, sess, sem); } }] });
+}
+function printSimple(title, inner){
+  $('#printRoot').innerHTML = `<div class="doc"><div class="doc-head">
+    <img class="crestimg" src="logo.png" alt="" onerror="this.style.visibility='hidden'" />
+    <div class="ttl"><h1>Ibrahim Badamasi Babangida University, Lapai</h1><p>P.M.B. 11, Lapai, Niger State</p>
+      <span class="band">${esc(title)}</span></div><div style="width:74px"></div></div>${inner}</div>`;
+  setTimeout(() => window.print(), 220);
+}
+
+/* -------------------------------------------------- 12. ADMIN CONSOLE ---- */
+$('#admMenu').onclick = () => openSidebar('#admSidebar');
+$('#admBell').onclick = () => renderAdmin('notifications');
+$('#admLogout').onclick = adminLogout;
+$$('#admSidebar .nav-item').forEach(b => b.onclick = () => {
+  const v = b.dataset.aview; closeSidebars();
+  if (v === 'logout') return adminLogout();
+  renderAdmin(v);
+});
+const ADM_ORDER = ['dashboard','statistics','students','courses','results','announcements','notifications','reports'];
+function renderAdmin(view){
+  const prev = ADM_VIEW; ADM_VIEW = view; resetCharts();
+  $$('#admSidebar .nav-item').forEach(b => b.classList.toggle('on', b.dataset.aview === view));
+  const u = DB.adminLog.filter(l => !l.read).length;
+  $('#admBadge').hidden = !u; $('#admBadge').textContent = u;
+  const host = $('#admView');
+  ({ dashboard:aDashboard, statistics:aStatistics, students:aStudents, courses:aCourses,
+     results:aResults, announcements:aAnnouncements, notifications:aNotifications, reports:aReports }[view] || aDashboard)(host);
+  paintIcons(host);
+  wireBack(host, () => renderAdmin(view === 'dashboard' ? 'dashboard' : (ADM_ORDER.includes(prev) && prev !== view ? prev : 'dashboard')));
+  window.scrollTo(0, 0);
+}
+function classCounts(){
+  const b = { 'First Class':0, '2:1':0, '2:2':0, 'Third Class':0, 'Pass':0, 'Fail':0 };
+  DB.students.forEach(s => b[shortClass(cgpaOf(s))]++); return b;
+}
+const PALETTE = { 'First Class':'#0b5d3b', '2:1':'#2f8f63', '2:2':'#c8a24a', 'Third Class':'#d98b3a', 'Pass':'#b8623a', 'Fail':'#b3261e' };
+
+function aDashboard(host){
+  const n = DB.students.length, avg = n ? DB.students.reduce((a, s) => a + cgpaOf(s), 0) / n : 0;
+  const firsts = DB.students.filter(s => cgpaOf(s) >= 4.5).length;
+  const carry = DB.students.filter(s => termsOf(s).flatMap(t => t.rows).some(r => r.grade === 'F')).length;
+  const top = [...DB.students].sort((a, b) => cgpaOf(b) - cgpaOf(a)).slice(0, 5);
+  host.innerHTML = `<div class="page-title"><div><h2>Administrator Dashboard</h2><p>Directorate of ICT · Ibrahim Badamasi Babangida University, Lapai</p></div>
+      <span class="pill red">${I('shield')} Restricted Console</span></div>
+    <div class="grid g-4" style="margin-bottom:1rem">
+      <div class="tile"><div class="ic">${I('users')}</div><b>${n}</b><small>Registered Students</small></div>
+      <div class="tile gold"><div class="ic">${I('bar-chart')}</div><b>${nf(avg)}</b><small>Average CGPA</small></div>
+      <div class="tile"><div class="ic">${I('trophy')}</div><b>${firsts}</b><small>First Class Track</small></div>
+      <div class="tile"><div class="ic">${I('alert-triangle')}</div><b>${carry}</b><small>With Carry-Overs</small></div></div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Classification Spread</h3></div><div class="chartbox"><canvas id="aD1"></canvas></div></div>
+      <div class="card"><div class="card-h"><h3>CGPA by Student</h3></div><div class="chartbox"><canvas id="aD2"></canvas></div></div></div>
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Top Performers</h3><button class="btn sm ghost" data-ago="students">${I('users')} Manage students</button></div>
+        <div class="tablewrap"><table class="rt"><thead><tr><th>#</th><th>Student</th><th class="num">CGPA</th><th>Class</th></tr></thead>
+        <tbody>${top.map((s, i) => `<tr><td data-l="Position">${i + 1}</td>
+          <td data-l="Student" class="full"><b>${esc(s.name)}</b><br /><small class="mono hint">${esc(s.matric)}</small></td>
+          <td data-l="CGPA" class="num"><b>${nf(cgpaOf(s))}</b></td>
+          <td data-l="Class"><span class="pill">${shortClass(cgpaOf(s))}</span></td></tr>`).join('')}</tbody></table></div></div>
+      <div class="card"><div class="card-h"><h3>Quick Actions</h3></div>
+        <div class="btn-row">
+          <button class="btn sm" id="aAdd">${I('plus')} Add Student</button>
+          <button class="btn sm gold" data-ago="results">${I('clipboard-list')} Upload Result</button>
+          <button class="btn sm ghost" data-ago="announcements">${I('megaphone')} Announcement</button>
+          <button class="btn sm ghost" data-ago="courses">${I('book-open')} Courses</button>
+          <button class="btn sm ghost" data-ago="reports">${I('file-bar-chart')} Reports</button></div>
+        <div class="card-h" style="margin-top:1.2rem"><h3 style="font-size:.95rem">Recent Activity</h3></div>
+        <ul class="timeline">${DB.adminLog.slice(0, 5).map(l => `<li><div class="tico">${I('activity')}</div>
+          <div class="tbody"><b>${esc(l.title)}</b><small>${esc(l.date)}</small><p>${esc(l.body)}</p></div></li>`).join('') || '<li class="hint">No activity yet.</li>'}</ul></div>
+    </div>`;
+  const cc = classCounts();
+  chart(() => drawDonut($('#aD1'), Object.entries(cc).filter(([, v]) => v).map(([k, v]) => ({ value:v, color:PALETTE[k] })), { center:String(n), sub:'STUDENTS' }));
+  chart(() => drawBars($('#aD2'), DB.students.map(s => s.matric.slice(-4)), DB.students.map(s => cgpaOf(s)),
+    { colors:DB.students.map(s => cgpaOf(s) >= 4.5 ? '#0b5d3b' : cgpaOf(s) >= 3.5 ? '#2f8f63' : '#c8a24a') }));
+  $$('[data-ago]', host).forEach(b => b.onclick = () => renderAdmin(b.dataset.ago));
+  $('#aAdd').onclick = () => studentDialog(null);
+}
+function aStatistics(host){
+  const all = DB.students.flatMap(s => termsOf(s).flatMap(t => t.rows));
+  const colors = { A:'#0b5d3b', B:'#2f8f63', C:'#c8a24a', D:'#d98b3a', E:'#b8623a', F:'#b3261e' };
+  const dist = ['A','B','C','D','E','F'].map(g => ({ g, n:all.filter(r => r.grade === g).length }));
+  const perTerm = [];
+  ALL_SESSIONS.forEach(sess => SEMESTERS.forEach(sem => {
+    const ts = DB.students.map(s => termAt(s, sess, sem)).filter(Boolean);
+    if (ts.length) perTerm.push({ label:sem + '\n' + sess.slice(0, 4), avg:ts.reduce((a, t) => a + t.gpa, 0) / ts.length });
+  }));
+  const pass = all.length ? all.filter(r => r.grade !== 'F').length / all.length * 100 : 0;
+  host.innerHTML = backBtn('Back to dashboard') + `<div class="page-title"><div><h2>Statistics</h2><p>Departmental performance analytics across all published results.</p></div></div>
+    <div class="grid g-4" style="margin-bottom:1rem">
+      <div class="tile"><div class="ic">${I('list')}</div><b>${all.length}</b><small>Result Entries</small></div>
+      <div class="tile gold"><div class="ic">${I('check-circle')}</div><b>${nf(pass, 1)}%</b><small>Pass Rate</small></div>
+      <div class="tile"><div class="ic">${I('book-open')}</div><b>${DB.courses.length}</b><small>Courses</small></div>
+      <div class="tile"><div class="ic">${I('calendar')}</div><b>${ALL_SESSIONS.length}</b><small>Sessions</small></div></div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Grade Distribution</h3></div><div class="chartbox"><canvas id="aS1"></canvas></div>
+        <div class="legend">${dist.map(d => `<span><i style="background:${colors[d.g]}"></i>${d.g} — ${d.n}</span>`).join('')}</div></div>
+      <div class="card"><div class="card-h"><h3>Average GPA per Semester</h3></div><div class="chartbox"><canvas id="aS2"></canvas></div></div></div>
+    <div class="card"><div class="card-h"><h3>Course Difficulty Index</h3><span class="pill grey">Average grade point</span></div>
+      <div class="tablewrap"><table class="rt"><thead><tr><th>Code</th><th>Course</th><th class="num">Entries</th><th class="num">Avg Point</th><th>Difficulty</th></tr></thead>
+      <tbody>${DB.courses.map(c => { const rows = all.filter(r => r.code === c.code); if (!rows.length) return '';
+        const avg = rows.reduce((a, r) => a + GP[r.grade], 0) / rows.length;
+        const lv = avg >= 4 ? ['Easy',''] : avg >= 3 ? ['Moderate','gold'] : ['Challenging','red'];
+        return `<tr><td data-l="Code" class="mono">${esc(c.code)}</td><td data-l="Course" class="full">${esc(c.title)}</td>
+          <td data-l="Entries" class="num">${rows.length}</td><td data-l="Avg Point" class="num">${nf(avg)}</td>
+          <td data-l="Difficulty"><span class="pill ${lv[1]}">${lv[0]}</span></td></tr>`; }).join('')}</tbody></table></div></div>`;
+  chart(() => drawDonut($('#aS1'), dist.filter(d => d.n).map(d => ({ value:d.n, color:colors[d.g] })), { center:String(all.length), sub:'ENTRIES' }));
+  chart(() => drawBars($('#aS2'), perTerm.map(p => p.label), perTerm.map(p => p.avg), { colors:perTerm.map(() => '#0b5d3b') }));
+}
+/* ---- Manage Students (with full photo management) ---- */
+function aStudents(host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Manage Students</h2><p>Create, update, photograph and remove student records.</p></div>
+      <button class="btn" id="sAdd">${I('plus')} Add Student</button></div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="field" style="flex:2 1 240px"><label for="sQ">Search students</label>
+          <input class="input" id="sQ" placeholder="Name or matric number…" /></div>
+        <div class="field"><label for="sLvl">Level</label><select class="input" id="sLvl"><option value="">All levels</option>${[100,200,300,400].map(l => `<option>${l}</option>`).join('')}</select></div>
+      </div><div id="sTable"></div></div>`;
+  const paint = () => {
+    const q = $('#sQ').value.trim().toLowerCase(), lv = $('#sLvl').value;
+    const list = DB.students.filter(s => (!lv || String(s.level) === lv) &&
+      (!q || s.name.toLowerCase().includes(q) || s.matric.toLowerCase().includes(q)));
+    $('#sTable').innerHTML = !list.length ? '<div class="empty">No student matches your search.</div>' : `
+      <div class="tablewrap"><table class="rt"><thead><tr><th>Photo</th><th>Student</th><th>Level</th><th class="num">CGPA</th><th>Class</th><th>Actions</th></tr></thead>
+      <tbody>${list.map(s => `<tr>
+        <td data-l="Photo">${imgTag(s, 'thumb')}</td>
+        <td data-l="Student" class="full"><b>${esc(s.name)}</b><br /><small class="mono hint">${esc(s.matric)}</small></td>
+        <td data-l="Level">${esc(s.level)}L</td>
+        <td data-l="CGPA" class="num"><b>${nf(cgpaOf(s))}</b></td>
+        <td data-l="Class"><span class="pill ${cgpaOf(s) >= 4.5 ? '' : 'grey'}">${shortClass(cgpaOf(s))}</span></td>
+        <td data-l="Actions"><div class="btn-row">
+          <button class="btn sm ghost" data-edit="${esc(s.matric)}">${I('pencil')} Edit</button>
+          <button class="btn sm ghost" data-pp="${esc(s.matric)}">${I('camera')} Picture</button>
+          <button class="btn sm gold" data-res="${esc(s.matric)}">${I('clipboard-list')} Result</button>
+          <button class="btn sm ghost danger" data-del="${esc(s.matric)}">${I('trash')} Delete</button></div></td></tr>`).join('')}</tbody></table></div>
+      <p class="hint mt1 mb0">${list.length} of ${DB.students.length} records shown.</p>`;
+    paintIcons($('#sTable'));
+    $$('[data-edit]').forEach(b => b.onclick = () => studentDialog(findStudent(b.dataset.edit)));
+    $$('[data-pp]').forEach(b => b.onclick = () => photoDialog(findStudent(b.dataset.pp)));
+    $$('[data-res]').forEach(b => b.onclick = () => resultDialog(findStudent(b.dataset.res)));
+    $$('[data-del]').forEach(b => b.onclick = () => { const s = findStudent(b.dataset.del);
+      confirmModal({ title:'Delete student', message:`Permanently delete <b>${esc(s.name)}</b> (${esc(s.matric)}) and all associated results? This cannot be undone.`,
+        confirmLabel:'Delete permanently', onYes(){ DB.students = DB.students.filter(x => x.matric !== s.matric);
+          logAdmin('Student deleted', `${s.name} (${s.matric}) removed from the register.`); saveDB(); paint(); toast('Student record deleted.', 'ok'); } }); });
+  };
+  $('#sQ').oninput = paint; $('#sLvl').onchange = paint; $('#sAdd').onclick = () => studentDialog(null);
+  paint();
+}
+/** Upload · Change · Remove · Preview · Save — admin only. */
+function photoDialog(st){
+  let pending = st.photo || null, cleared = false;
+  openModal({ title:`Profile picture — ${st.name}`, icon:'camera', body:`
+    <div class="center" style="margin-bottom:1rem"><div id="ppPrev" style="display:inline-block">${imgTag(st, 'thumb lg')}</div></div>
+    <div class="field"><label for="ppFile">Upload / change picture</label>
+      <input class="input" id="ppFile" type="file" accept="image/*" /></div>
+    <p class="hint">Images are automatically resized to 420px and compressed so they fit in local storage. Accepted: JPG, PNG, WEBP.</p>
+    <div class="btn-row" style="margin:.8rem 0">
+      <button class="btn sm ghost" type="button" id="ppPick">${I('upload')} Choose file</button>
+      <button class="btn sm ghost danger" type="button" id="ppRemove">${I('trash')} Remove picture</button></div>
+    <div class="notice info">${I('info')}<span>After saving, this picture appears everywhere for the student — dashboard, profile, sidebar, result viewer, CGPA Studio and the printed transcript. Students cannot change it themselves.</span></div>
+    <div class="err" id="ppErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Save changes', cls:'', icon:'save', onClick:save }] });
+  const preview = src => {
+    $('#ppPrev').innerHTML = src
+      ? `<img class="thumb lg" src="${esc(src)}" alt="Preview" />`
+      : `<div class="thumb lg avatar-fallback">${esc(initialsOf(st.name))}</div>`;
+  };
+  $('#ppPick').onclick = () => $('#ppFile').click();
+  $('#ppFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    $('#ppErr').textContent = '';
+    try { pending = await compressImage(f); cleared = false; preview(pending); toast('Preview updated — remember to save.', ''); }
+    catch (err){ $('#ppErr').textContent = err.message || 'Could not load that image.'; }
+  };
+  $('#ppRemove').onclick = () => { pending = null; cleared = true; preview(null); };
+  function save(){
+    st.photo = pending || null;
+    if (cleared) st.photoFile = null;
+    st.photoUpdated = nowStr();
+    if (!saveDB()) return;
+    notify(st, 'security', cleared && !pending ? 'Passport photograph removed' : 'Passport photograph updated',
+      `Your profile picture was ${cleared && !pending ? 'removed' : 'updated'} by the Registry on ${nowStr()}.`);
+    saveDB(); closeModal();
+    if (CURRENT && CURRENT.matric === st.matric){ syncStudentChrome(); renderStudent(STU_VIEW, true); }
+    renderAdmin('students');
+    logAdmin('Profile picture updated', `${st.name} (${st.matric}).`);
+    toast('Profile picture saved and published.', 'ok');
+  }
+}
+function studentDialog(st){
+  const isNew = !st;
+  let pending = st ? st.photo : null, cleared = false;
+  openModal({ title:isNew ? 'Add new student' : 'Edit student record', icon:isNew ? 'plus' : 'pencil', wide:true, body:`
+    <div class="grid g-2">
+      <div class="field"><label for="fdMat">Matric Number</label><input class="input" id="fdMat" value="${esc(st ? st.matric : 'U25/FPY/CSC/')}" ${isNew ? '' : 'readonly'} /></div>
+      <div class="field"><label for="fdName">Full Name</label><input class="input" id="fdName" value="${esc(st ? st.name : '')}" placeholder="Surname First Middle" /></div>
+      <div class="field"><label for="fdPass">${isNew ? 'Initial Password' : 'Reset Password (optional)'}</label>
+        <input class="input" id="fdPass" value="${isNew ? 'Ibbul@2025' : ''}" placeholder="${isNew ? '' : 'Leave blank to keep current'}" /></div>
+      <div class="field"><label for="fdLvl">Level</label><select class="input" id="fdLvl">${[100,200,300,400].map(l => `<option ${st && st.level == l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label for="fdDept">Department</label><input class="input" id="fdDept" value="${esc(st ? st.department : DEPARTMENT)}" /></div>
+      <div class="field"><label for="fdFac">Faculty</label><input class="input" id="fdFac" value="${esc(st ? st.faculty : FACULTY)}" /></div>
+      <div class="field"><label for="fdMail">E-mail</label><input class="input" id="fdMail" type="email" value="${esc(st ? st.email : '')}" /></div>
+      <div class="field"><label for="fdPhone">Phone</label><input class="input" id="fdPhone" value="${esc(st ? st.phone : '')}" /></div>
+    </div>
+    <div class="field"><label>Profile picture</label>
+      <div class="spread" style="gap:1rem">
+        <div id="fdPrev">${st ? imgTag(st, 'thumb lg') : `<div class="thumb lg avatar-fallback">?</div>`}</div>
+        <div style="flex:1 1 200px">
+          <input class="input" id="fdFile" type="file" accept="image/*" />
+          <div class="btn-row" style="margin-top:.5rem">
+            <button class="btn sm ghost" type="button" id="fdRemove">${I('trash')} Remove</button></div>
+          <p class="hint mb0" style="margin-top:.4rem">Uploaded here or from <b>Picture</b> in the students table. Students cannot change it.</p>
+        </div></div></div>
+    ${isNew ? `<div class="notice info">${I('info')}<span>The student must change this password at first login. Results can be uploaded immediately after creation.</span></div>` : ''}
+    <div class="err" id="fdErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:isNew ? 'Create student' : 'Save changes', cls:'', icon:'save', onClick:save }] });
+  const preview = src => { $('#fdPrev').innerHTML = src ? `<img class="thumb lg" src="${esc(src)}" alt="Preview" />`
+    : `<div class="thumb lg avatar-fallback">${esc(initialsOf($('#fdName').value || '?'))}</div>`; };
+  $('#fdFile').onchange = async e => { const f = e.target.files[0]; if (!f) return;
+    try { pending = await compressImage(f); cleared = false; preview(pending); } catch (err){ $('#fdErr').textContent = err.message; } };
+  $('#fdRemove').onclick = () => { pending = null; cleared = true; preview(null); };
+  function save(){
+    const mat = $('#fdMat').value.trim().toUpperCase(), name = $('#fdName').value.trim(), er = $('#fdErr');
+    if (!mat || !name) return er.textContent = 'Matric number and full name are required.';
+    if (isNew && findStudent(mat)) return er.textContent = 'That matric number already exists.';
+    const pass = $('#fdPass').value.trim();
+    if (isNew && pass.length < 6) return er.textContent = 'Initial password must be at least 6 characters.';
+    if (isNew){
+      const ns = { matric:mat, name, password:pass, mustChange:true,
+        faculty:$('#fdFac').value.trim(), department:$('#fdDept').value.trim(), level:Number($('#fdLvl').value),
+        photo:pending || null, photoFile:null, photoUpdated:pending ? nowStr() : null,
+        email:$('#fdMail').value.trim(), phone:$('#fdPhone').value.trim(), entryYear:new Date().getFullYear(),
+        results:{}, notifications:[], calcSaves:[] };
+      notify(ns, 'security', 'Welcome to the IBBUL Portal', 'Your student account has been created. Please change your temporary password at first login.');
+      DB.students.push(ns);
+      logAdmin('Student created', `${name} (${mat}) added to the register.`);
+    } else {
+      st.name = name; st.level = Number($('#fdLvl').value); st.department = $('#fdDept').value.trim();
+      st.faculty = $('#fdFac').value.trim(); st.email = $('#fdMail').value.trim(); st.phone = $('#fdPhone').value.trim();
+            if (pending || cleared){
+        st.photo = pending || null;
+        if (cleared) st.photoFile = null;
+        st.photoUpdated = nowStr();
+        notify(st, 'security', 'Passport photograph updated', `Your profile picture was updated by the Registry on ${nowStr()}.`);
+      }
+      if (pass){
+        st.password = pass; st.mustChange = true;
+        notify(st, 'security', 'Password reset by administrator', 'A temporary password was issued. You must change it at your next login.');
+      }
+      logAdmin('Student updated', `${st.name} (${st.matric}) record was modified.`);
+    }
+    if (!saveDB()) return;
+    closeModal();
+    if (!isNew && CURRENT && CURRENT.matric === st.matric){ syncStudentChrome(); renderStudent(STU_VIEW, true); }
+    renderAdmin('students');
+    toast(isNew ? 'Student record created.' : 'Student record updated.', 'ok');
+  }
+}
+
+/* ---- Upload / edit a semester result ---- */
+function resultDialog(st, preSess, preSem){
+  openModal({ title:`Upload result — ${st.name}`, icon:'clipboard-list', wide:true, body:`
+    <div class="grid g-2">
+      <div class="field"><label for="urSess">Session</label><select class="input" id="urSess">${ALL_SESSIONS.map(s => `<option ${preSess === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label for="urSem">Semester</label><select class="input" id="urSem">${SEMESTERS.map(s => `<option ${preSem === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <div id="urRows"></div>
+    <div class="spread mt1"><span class="hint">Total units: <b id="urU">0</b></span><span class="pill">GPA <b id="urG">0.00</b></span></div>
+    <div class="err" id="urErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Publish result', cls:'', icon:'upload', onClick:publish }] });
+
+  const build = () => {
+    const sess = $('#urSess').value, sem = $('#urSem').value, lvl = levelFor(sess, st);
+    const existing = ((st.results || {})[sess] || {})[sem] || [];
+    const pool = DB.courses.filter(c => c.level === lvl && c.sem === sem);
+    const list = pool.length ? pool : existing;
+    $('#urRows').innerHTML = !list.length
+      ? '<div class="empty">No courses defined for this level and semester. Add them under Manage Courses.</div>'
+      : list.map(c => { const cur = existing.find(x => x.code === c.code);
+          return `<div class="calc-row" data-code="${esc(c.code)}" data-title="${esc(c.title)}" data-unit="${c.unit}">
+            <div><b style="font-size:.9rem">${esc(c.code)}</b><br /><small class="hint">${esc(c.title)}</small></div>
+            <div class="hint">${c.unit} unit${c.unit > 1 ? 's' : ''}</div>
+            <select class="input urG" aria-label="Grade for ${esc(c.code)}">${['—','A','B','C','D','E','F'].map(g =>
+              `<option ${cur ? (cur.grade === g ? 'selected' : '') : (g === '—' ? 'selected' : '')}>${g}</option>`).join('')}</select>
+            <span></span></div>`; }).join('');
+    $$('.urG').forEach(s => s.onchange = calc);
+    calc();
+  };
+  const collect = () => $$('#urRows .calc-row').map(w => ({
+    code:w.dataset.code, title:w.dataset.title, unit:Number(w.dataset.unit), grade:w.querySelector('.urG').value
+  })).filter(r => r.grade !== '—');
+  function calc(){ const g = gpaOf(collect()); $('#urU').textContent = g.unit; $('#urG').textContent = nf(g.gpa); }
+  function publish(){
+    const sess = $('#urSess').value, sem = $('#urSem').value, rows = collect();
+    if (!rows.length) return $('#urErr').textContent = 'Assign a grade to at least one course.';
+    st.results = st.results || {}; st.results[sess] = st.results[sess] || {};
+    st.results[sess][sem] = rows;
+    const g = gpaOf(rows);
+    notify(st, 'result', 'New result uploaded', `Your ${sess} ${sem} Semester result has been published. Semester GPA: ${nf(g.gpa)}.`);
+    notify(st, 'cgpa', 'CGPA updated', `Your cumulative grade point average is now ${nf(cgpaOf(st))} (${shortClass(cgpaOf(st))}).`);
+    logAdmin('Result published', `${sess} ${sem} Semester result uploaded for ${st.name} (${st.matric}).`);
+    saveDB(); closeModal();
+    if (CURRENT && CURRENT.matric === st.matric) renderStudent(STU_VIEW, true);
+    renderAdmin(ADM_VIEW === 'results' ? 'results' : 'students');
+    toast('Result published to the student portal.', 'ok');
+  }
+  $('#urSess').onchange = build; $('#urSem').onchange = build;
+  build();
+}
+function aResults(host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Manage Results</h2><p>Publish, review and amend semester results.</p></div></div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="field" style="flex:2 1 240px"><label for="mrStu">Student</label>
+          <select class="input" id="mrStu">${DB.students.map(s => `<option value="${esc(s.matric)}">${esc(s.name)} — ${esc(s.matric)}</option>`).join('')}</select></div>
+        <div class="field"><label for="mrSess">Session</label><select class="input" id="mrSess">${ALL_SESSIONS.map(s => `<option>${s}</option>`).join('')}</select></div>
+        <div class="field"><label for="mrSem">Semester</label><select class="input" id="mrSem">${SEMESTERS.map(s => `<option>${s}</option>`).join('')}</select></div>
+        <button class="btn gold" id="mrEdit">${I('upload')} Upload / Edit</button>
+      </div><div id="mrOut"></div></div>`;
+  const paint = () => {
+    const st = findStudent($('#mrStu').value), sess = $('#mrSess').value, sem = $('#mrSem').value;
+    if (!st){ $('#mrOut').innerHTML = '<div class="empty">No students on record.</div>'; return; }
+    const t = termAt(st, sess, sem);
+    $('#mrOut').innerHTML = !t
+      ? `<div class="empty">No result published for <b>${esc(st.name)}</b> — ${esc(sess)} ${esc(sem)} Semester.</div>`
+      : `<div class="spread" style="margin-bottom:.6rem"><b>${esc(st.name)} · ${esc(sess)} ${esc(sem)} Semester</b>
+          <span class="pill">GPA ${nf(t.gpa)} · CGPA ${nf(t.cgpa)}</span></div>${resultTable(t)}
+        <div class="btn-row mt1">
+          <button class="btn sm ghost" id="mrPrint">${I('printer')} Print statement</button>
+          <button class="btn sm ghost danger" id="mrDel">${I('trash')} Delete this result</button></div>`;
+    paintIcons($('#mrOut'));
+    const p = $('#mrPrint'); if (p) p.onclick = () => printTranscript(st, sess, sem);
+    const d = $('#mrDel'); if (d) d.onclick = () => confirmModal({
+      title:'Delete result', message:`Remove the ${esc(sess)} ${esc(sem)} Semester result for <b>${esc(st.name)}</b>?`,
+      confirmLabel:'Delete', onYes(){
+        if (st.results[sess]) delete st.results[sess][sem];
+        notify(st, 'result', 'Result withdrawn', `Your ${sess} ${sem} Semester result was withdrawn pending review.`);
+        logAdmin('Result deleted', `${sess} ${sem} result removed for ${st.matric}.`);
+        saveDB(); paint(); toast('Result deleted.', 'ok');
+      } });
+  };
+  $('#mrStu').onchange = paint; $('#mrSess').onchange = paint; $('#mrSem').onchange = paint;
+  $('#mrEdit').onclick = () => { const st = findStudent($('#mrStu').value); if (st) resultDialog(st, $('#mrSess').value, $('#mrSem').value); };
+  paint();
+}
+/* ---- Courses ---- */
+function aCourses(host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Manage Courses</h2><p>Catalogue used for result upload and GPA computation.</p></div>
+      <button class="btn" id="cAdd">${I('plus')} Add Course</button></div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="field"><label for="cLvl">Level</label><select class="input" id="cLvl"><option value="">All</option>${[100,200,300,400].map(l => `<option>${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="cSem">Semester</label><select class="input" id="cSem"><option value="">All</option>${SEMESTERS.map(s => `<option>${s}</option>`).join('')}</select></div>
+        <div class="field" style="flex:2 1 220px"><label for="cQ">Search</label><input class="input" id="cQ" placeholder="Course code or title…" /></div>
+      </div><div id="cTable"></div></div>`;
+  const paint = () => {
+    const lv = $('#cLvl').value, sm = $('#cSem').value, q = $('#cQ').value.toLowerCase().trim();
+    const list = DB.courses.filter(c => (!lv || String(c.level) === lv) && (!sm || c.sem === sm) &&
+      (!q || c.code.toLowerCase().includes(q) || c.title.toLowerCase().includes(q)));
+    $('#cTable').innerHTML = !list.length ? '<div class="empty">No course matches the filter.</div>' : `
+      <div class="tablewrap"><table class="rt"><thead><tr><th>Code</th><th>Title</th><th class="num">Unit</th><th>Level</th><th>Semester</th><th>Actions</th></tr></thead>
+      <tbody>${list.map(c => `<tr>
+        <td data-l="Code" class="mono"><b>${esc(c.code)}</b></td><td data-l="Title" class="full">${esc(c.title)}</td>
+        <td data-l="Unit" class="num">${c.unit}</td><td data-l="Level">${c.level}L</td><td data-l="Semester">${esc(c.sem)}</td>
+        <td data-l="Actions"><div class="btn-row">
+          <button class="btn sm ghost" data-ced="${c.id}">${I('pencil')} Edit</button>
+          <button class="btn sm ghost danger" data-cdel="${c.id}">${I('trash')} Delete</button></div></td></tr>`).join('')}</tbody></table></div>
+      <p class="hint mt1 mb0">${list.length} of ${DB.courses.length} courses.</p>`;
+    paintIcons($('#cTable'));
+    $$('[data-ced]').forEach(b => b.onclick = () => dlg(DB.courses.find(c => c.id === b.dataset.ced)));
+    $$('[data-cdel]').forEach(b => b.onclick = () => { const c = DB.courses.find(x => x.id === b.dataset.cdel);
+      confirmModal({ title:'Delete course', message:`Remove <b>${esc(c.code)} — ${esc(c.title)}</b> from the catalogue? Published results are not affected.`,
+        confirmLabel:'Delete', onYes(){ DB.courses = DB.courses.filter(x => x.id !== c.id);
+          logAdmin('Course deleted', `${c.code} removed from the catalogue.`); saveDB(); paint(); toast('Course deleted.', 'ok'); } }); });
+  };
+  ['#cLvl','#cSem'].forEach(s => $(s).onchange = paint); $('#cQ').oninput = paint;
+  $('#cAdd').onclick = () => dlg(null);
+  paint();
+  function dlg(c){
+    const isNew = !c;
+    openModal({ title:isNew ? 'Add course' : 'Edit course', icon:'book-open', body:`
+      <div class="grid g-2">
+        <div class="field"><label for="ccCode">Course Code</label><input class="input" id="ccCode" value="${esc(c ? c.code : '')}" placeholder="CSC 311" /></div>
+        <div class="field"><label for="ccUnit">Credit Unit</label><input class="input" id="ccUnit" type="number" min="1" max="12" value="${c ? c.unit : 3}" /></div>
+        <div class="field"><label for="ccLvl">Level</label><select class="input" id="ccLvl">${[100,200,300,400].map(l => `<option ${c && c.level == l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="field"><label for="ccSem">Semester</label><select class="input" id="ccSem">${SEMESTERS.map(s => `<option ${c && c.sem === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label for="ccTitle">Course Title</label><input class="input" id="ccTitle" value="${esc(c ? c.title : '')}" placeholder="Software Engineering I" /></div>
+      <div class="err" id="ccErr" role="alert"></div>`,
+      actions:[{ label:'Cancel', cls:'ghost' }, { label:'Save', cls:'', icon:'save', onClick(){
+        const code = $('#ccCode').value.trim().toUpperCase(), title = $('#ccTitle').value.trim(), unit = Number($('#ccUnit').value);
+        if (!code || !title || !unit) return $('#ccErr').textContent = 'Code, title and credit unit are required.';
+        const rec = { code, title, unit, level:Number($('#ccLvl').value), sem:$('#ccSem').value };
+        if (isNew){ DB.courses.push({ ...rec, id:uid('c') }); logAdmin('Course added', `${code} — ${title}`); }
+        else { Object.assign(c, rec); logAdmin('Course updated', `${code} — ${title}`); }
+        saveDB(); closeModal(); paint(); toast(isNew ? 'Course added.' : 'Course updated.', 'ok');
+      }}]});
+  }
+}
+/* ---- Announcements ---- */
+function aAnnouncements(host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Announcements</h2><p>Publish notices to every student portal.</p></div>
+      <button class="btn" id="anAdd">${I('plus')} New Announcement</button></div>
+    <div class="card" id="anList"></div>`;
+  const paint = () => {
+    $('#anList').innerHTML = !DB.announcements.length ? '<div class="empty">No announcements published.</div>' :
+      `<ul class="timeline">${DB.announcements.map(a => `<li><div class="tico gold">${I('megaphone')}</div>
+        <div class="tbody"><b>${esc(a.title)}</b><small>${esc(a.tag)} · ${esc(a.date)}</small><p>${esc(a.body)}</p></div>
+        <div class="btn-row"><button class="btn sm ghost" data-aed="${a.id}">${I('pencil')} Edit</button>
+        <button class="btn sm ghost danger" data-adel="${a.id}">${I('trash')} Delete</button></div></li>`).join('')}</ul>`;
+    paintIcons($('#anList'));
+    $$('[data-aed]').forEach(b => b.onclick = () => dlg(DB.announcements.find(x => x.id === b.dataset.aed)));
+    $$('[data-adel]').forEach(b => b.onclick = () => confirmModal({ title:'Delete announcement',
+      message:'Withdraw this notice from every student portal?', confirmLabel:'Delete', onYes(){
+        DB.announcements = DB.announcements.filter(x => x.id !== b.dataset.adel);
+        logAdmin('Announcement deleted', 'A notice was withdrawn from the portal.');
+        saveDB(); paint(); toast('Announcement deleted.', 'ok'); } }));
+  };
+  $('#anAdd').onclick = () => dlg(null);
+  paint();
+  function dlg(a){
+    const isNew = !a;
+    openModal({ title:isNew ? 'New announcement' : 'Edit announcement', icon:'megaphone', body:`
+      <div class="field"><label for="anT">Title</label><input class="input" id="anT" value="${esc(a ? a.title : '')}" placeholder="Examination Timetable Released" /></div>
+      <div class="field"><label for="anTag">Category</label><select class="input" id="anTag">${['Results','Examination','Finance','Event','General'].map(t => `<option ${a && a.tag === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="anB">Message</label><textarea class="input" id="anB" placeholder="Write the notice…">${esc(a ? a.body : '')}</textarea></div>
+      ${isNew ? '<label class="check"><input type="checkbox" id="anPush" checked /> Also send as a notification to all students</label>' : ''}
+      <div class="err" id="anErr" role="alert"></div>`,
+      actions:[{ label:'Cancel', cls:'ghost' }, { label:'Publish', cls:'', icon:'send', onClick(){
+        const t = $('#anT').value.trim(), b = $('#anB').value.trim();
+        if (!t || !b) return $('#anErr').textContent = 'Title and message are required.';
+        if (isNew){
+          DB.announcements.unshift({ id:uid('a'), title:t, body:b, tag:$('#anTag').value, date:todayStr() });
+          if ($('#anPush').checked) DB.students.forEach(s => notify(s, 'announcement', t, b));
+          logAdmin('Announcement published', t);
+        } else { a.title = t; a.body = b; a.tag = $('#anTag').value; logAdmin('Announcement edited', t); }
+        saveDB(); closeModal(); paint();
+        if (CURRENT) syncStudentChrome();
+        toast('Announcement published.', 'ok');
+      }}]});
+  }
+}
+/* ---- Admin notifications ---- */
+function aNotifications(host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Notifications</h2><p>Send direct messages and review console activity.</p></div>
+      <button class="btn" id="nSend">${I('send')} Send Notification</button></div>
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Console Activity</h3>
+        <button class="btn sm ghost" id="nRead">${I('check')} Mark all read</button></div>
+        ${!DB.adminLog.length ? '<div class="empty">No activity recorded.</div>' :
+        `<ul class="timeline">${DB.adminLog.map(l => `<li class="${l.read ? '' : 'unread'}"><div class="tico">${I('activity')}</div>
+          <div class="tbody"><b>${esc(l.title)}</b><small>${esc(l.date)}</small><p>${esc(l.body)}</p></div></li>`).join('')}</ul>`}</div>
+      <div class="card"><div class="card-h"><h3>Delivery Summary</h3></div>
+        <div class="tablewrap"><table class="rt"><thead><tr><th>Student</th><th class="num">Unread</th><th class="num">Total</th></tr></thead>
+        <tbody>${DB.students.map(s => `<tr>
+          <td data-l="Student" class="full"><b>${esc(s.name)}</b><br /><small class="mono hint">${esc(s.matric)}</small></td>
+          <td data-l="Unread" class="num">${unreadOf(s)}</td><td data-l="Total" class="num">${s.notifications.length}</td></tr>`).join('')}</tbody></table></div></div>
+    </div>`;
+  $('#nRead').onclick = () => { DB.adminLog.forEach(l => l.read = true); saveDB(); renderAdmin('notifications'); };
+  $('#nSend').onclick = () => openModal({ title:'Send notification', icon:'send', body:`
+    <div class="field"><label for="nTo">Recipient</label><select class="input" id="nTo"><option value="ALL">All students</option>
+      ${DB.students.map(s => `<option value="${esc(s.matric)}">${esc(s.name)} — ${esc(s.matric)}</option>`).join('')}</select></div>
+    <div class="field"><label for="nType">Type</label><select class="input" id="nType">
+      <option value="announcement">Announcement</option><option value="result">Result</option>
+      <option value="deadline">Deadline</option><option value="cgpa">CGPA</option></select></div>
+    <div class="field"><label for="nT">Title</label><input class="input" id="nT" placeholder="Course registration reminder" /></div>
+    <div class="field"><label for="nB">Message</label><textarea class="input" id="nB"></textarea></div>
+    <div class="err" id="nErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Send', cls:'', icon:'send', onClick(){
+      const t = $('#nT').value.trim(), b = $('#nB').value.trim(), to = $('#nTo').value, ty = $('#nType').value;
+      if (!t || !b) return $('#nErr').textContent = 'Title and message are required.';
+      const targets = to === 'ALL' ? DB.students : [findStudent(to)].filter(Boolean);
+      targets.forEach(s => notify(s, ty, t, b));
+      logAdmin('Notification sent', `"${t}" delivered to ${targets.length} student(s).`);
+      saveDB(); closeModal(); renderAdmin('notifications');
+      if (CURRENT) syncStudentChrome();
+      toast(`Notification sent to ${targets.length} student(s).`, 'ok');
+    }}]});
+}
+/* ---- Reports ---- */
+function aReports(host){
+  const rows = DB.students.map(s => { const t = latestTerm(s);
+    return { s, gpa:gpaNow(s), cgpa:cgpaOf(s), units:t ? t.cumUnit : 0, cls:shortClass(cgpaOf(s)) };
+  }).sort((a, b) => b.cgpa - a.cgpa);
+  const cc = classCounts();
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Reports</h2><p>Departmental result summary and ranked class list.</p></div>
+      <button class="btn gold" id="rpPrint">${I('printer')} Print Report</button></div>
+    <div class="grid g-2" style="margin-bottom:1rem">
+      <div class="card"><div class="card-h"><h3>Classification Summary</h3></div><div class="chartbox"><canvas id="rp1"></canvas></div></div>
+      <div class="card"><div class="card-h"><h3>Breakdown</h3></div>
+        ${Object.entries(cc).map(([k, v]) => `<div style="margin-bottom:.75rem">
+          <div class="spread"><small><b>${k}</b></small><small>${v} student${v === 1 ? '' : 's'}</small></div>
+          <div class="bar"><i style="width:${DB.students.length ? v / DB.students.length * 100 : 0}%"></i></div></div>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><h3>Class List (ranked by CGPA)</h3><span class="pill">${rows.length} students</span></div>
+      <div class="tablewrap"><table class="rt"><thead><tr><th>Pos</th><th>Student</th><th>Level</th><th class="num">Units</th><th class="num">GPA</th><th class="num">CGPA</th><th>Classification</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr><td data-l="Position"><b>${i + 1}</b></td>
+        <td data-l="Student" class="full"><b>${esc(r.s.name)}</b><br /><small class="mono hint">${esc(r.s.matric)}</small></td>
+        <td data-l="Level">${r.s.level}L</td><td data-l="Units" class="num">${r.units}</td>
+        <td data-l="GPA" class="num">${nf(r.gpa)}</td><td data-l="CGPA" class="num"><b>${nf(r.cgpa)}</b></td>
+        <td data-l="Class"><span class="pill ${r.cgpa >= 4.5 ? '' : 'grey'}">${r.cls}</span></td></tr>`).join('')}</tbody></table></div></div>`;
+  chart(() => drawDonut($('#rp1'), Object.entries(cc).filter(([, v]) => v).map(([k, v]) => ({ value:v, color:PALETTE[k] })),
+    { center:String(DB.students.length), sub:'STUDENTS' }));
+  $('#rpPrint').onclick = () => printSimple('Departmental Result Summary', `
+    <div class="doc-bio"><div><span>Faculty</span><b>${esc(FACULTY)}</b></div><div><span>Department</span><b>${esc(DEPARTMENT)}</b></div>
+      <div><span>Total Students</span><b>${rows.length}</b></div><div><span>Date</span><b>${todayStr()}</b></div></div>
+    <h4 class="sec">Class List Ranked by CGPA</h4>
+    <table class="doc-t"><thead><tr><th>Pos</th><th>Matric No.</th><th>Name</th><th>Units</th><th>CGPA</th><th>Classification</th></tr></thead>
+    <tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.s.matric)}</td><td>${esc(r.s.name)}</td>
+      <td>${r.units}</td><td>${nf(r.cgpa)}</td><td>${esc(classify(r.cgpa))}</td></tr>`).join('')}</tbody></table>
+    <div class="doc-sum">${Object.entries(cc).slice(0, 4).map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+    <div class="doc-foot">
+      <div class="sigline"><div class="sign">Dr. S. A. Mohammed</div><hr /><small>Head of Department</small></div>
+      <div class="stamp"><div><b>IBBUL</b>Official Seal<br />Examinations &amp; Records</div></div>
+      <div class="sigline"><div class="sign">A. M. Ibrahim</div><hr /><small>Registrar</small></div></div>
+    <div class="doc-note">Generated by the IBBUL Results Checker &amp; CGPA Calculator on ${todayStr()}.</div>`);
+}
+
+/* ------------------------------------------------------------ 13. BOOT ---- */
+(function boot(){
+  DB = loadDB();
+  applySettings();
+  paintIcons(document);
+
+  $$('.yr').forEach(e => e.textContent = new Date().getFullYear());
+  $('#hsStudents').textContent = DB.students.length;
+  $('#hsCourses').textContent = DB.courses.length;
+
+  try {
+    const rem = localStorage.getItem('ibbul_remember');
+    if (rem && findStudent(rem)){ $('#fUser').value = rem; $('#fRemember').checked = true; }
+  } catch (e){}
+
+  setLoginMode('student');
+  togglePw(false);
+  updateFab();
+
+  // Any broken image anywhere falls back to the university crest.
+  document.addEventListener('error', e => {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && !t.dataset.fb && !/logo\.png$/.test(t.getAttribute('src') || '')){
+      t.dataset.fb = '1'; t.src = 'logo.png';
+    }
+  }, true);
+
+  // Deep link: index.html#verify=TOKEN opens the verification page directly.
+  if (/verify=/.test(location.hash)) routeHash();
+})();
+</script>
+</body>
+</html>
