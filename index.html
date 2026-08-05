@@ -440,8 +440,11 @@ tfoot td,tfoot th{ background:#f2f6f4; font-weight:700; }
 .demo-hint{
   margin-top:1rem; font-size:.8rem; color:var(--ink-soft); background:rgba(255,255,255,.6);
   border:1px dashed rgba(11,93,59,.3); border-radius:var(--r-sm); padding:.65rem .8rem; overflow-wrap:anywhere;
-   display:none; }
-.demo-hint b{ color:var(--green-700); display:none; }
+  display:none;
+}
+.demo-hint b{ color:var(--green-700);
+display:none;
+}
 
 
 /* ==========================================================================
@@ -789,6 +792,82 @@ table.doc-t tfoot td{ font-weight:700; background:#f2f6f4; }
   .chat{ height:78svh; min-height:300px; }
   .modal{ max-height:calc(100dvh - 16px); }
 }
+/* ==========================================================================
+   DARK / LIGHT THEME
+   ========================================================================== */
+:root{ --surface:#ffffff; --surface-2:#fbfcfb; --surface-3:#f7faf8; }
+html[data-theme="dark"]{
+  --bg:#0d1411; --surface:#151e19; --surface-2:#111a16; --surface-3:#1a2620;
+  --ink:#e9f0ec; --ink-soft:#c3cfc8; --muted:#8b9a92; --line:#26332d;
+  --green-050:#16281f; --green-700:#7fd0a6; --green-600:#2f9b6a;
+  --glass:rgba(20,30,25,.62); --glass-strong:rgba(20,30,25,.8); --glass-brd:rgba(255,255,255,.10);
+  --sh-1:0 1px 2px rgba(0,0,0,.4), 0 2px 10px rgba(0,0,0,.3);
+  --sh-2:0 6px 24px rgba(0,0,0,.45);
+  --sh-3:0 18px 60px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+html[data-theme="dark"] body{ background:var(--bg); color:var(--ink); }
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .tile,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .modal-h,
+html[data-theme="dark"] .chat,
+html[data-theme="dark"] .chat-in,
+html[data-theme="dark"] .chips,
+html[data-theme="dark"] .msg.bot,
+html[data-theme="dark"] .verify-card,
+html[data-theme="dark"] .tablewrap,
+html[data-theme="dark"] table,
+html[data-theme="dark"] table.rt tr{ background:var(--surface); color:var(--ink); border-color:var(--line); }
+html[data-theme="dark"] .modal-f,
+html[data-theme="dark"] .calc-row,
+html[data-theme="dark"] .chips button,
+html[data-theme="dark"] tfoot td,
+html[data-theme="dark"] tfoot th{ background:var(--surface-2); border-color:var(--line); }
+html[data-theme="dark"] th{ background:var(--surface-3); color:var(--green-700); }
+html[data-theme="dark"] tbody tr:hover{ background:var(--surface-3); }
+html[data-theme="dark"] .chat-body{ background:linear-gradient(180deg,var(--surface-2),var(--surface)); }
+html[data-theme="dark"] .input,
+html[data-theme="dark"] .btn.ghost,
+html[data-theme="dark"] .iconbtn,
+html[data-theme="dark"] .x,
+html[data-theme="dark"] .side-close{ background:var(--surface-3); color:var(--ink); border-color:var(--line); }
+html[data-theme="dark"] .input[readonly]{ background:var(--surface-2); }
+html[data-theme="dark"] .input::placeholder{ color:#75837b; }
+html[data-theme="dark"] .btn.ghost:hover,
+html[data-theme="dark"] .iconbtn:hover{ background:#22302a; }
+html[data-theme="dark"] .topbar{ background:rgba(15,23,19,.86); border-bottom-color:var(--line); }
+html[data-theme="dark"] .sidebar:not(.admin){
+  background:linear-gradient(160deg, rgba(19,29,24,.94), rgba(13,20,17,.92));
+  border-right-color:var(--line); color:var(--ink-soft);
+}
+html[data-theme="dark"] .sidebar:not(.admin) .side-head,
+html[data-theme="dark"] .sidebar:not(.admin) .side-profile,
+html[data-theme="dark"] .sidebar:not(.admin) .side-foot{ border-color:var(--line); }
+html[data-theme="dark"] .nav-item{ color:var(--ink-soft); }
+html[data-theme="dark"] .nav-item:hover{ background:rgba(255,255,255,.07); color:#fff; }
+html[data-theme="dark"] .backbtn{
+  background:linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.05));
+  border-color:rgba(255,255,255,.16); color:var(--green-700);
+  box-shadow:0 6px 18px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+}
+html[data-theme="dark"] .backbtn:hover{ background:linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.08)); }
+html[data-theme="dark"] .bar{ background:#22302a; }
+html[data-theme="dark"] .unread{ background:#17251e; }
+html[data-theme="dark"] .empty,
+html[data-theme="dark"] .hint{ color:var(--muted); }
+html[data-theme="dark"] .pill.grey{ background:#22302a; color:var(--ink-soft); border-color:var(--line); }
+html[data-theme="dark"] .notice{ background:#2a2312; border-color:#4a3d18; color:#e7d3a0; }
+html[data-theme="dark"] .notice.red{ background:#2d1614; border-color:#54241f; color:#f0b3ad; }
+html[data-theme="dark"] .notice.info{ background:#12251c; border-color:#254434; color:#9fdcbc; }
+html[data-theme="dark"] .rm{ background:#2d1614; border-color:#54241f; }
+html[data-theme="dark"] .thumb{ background:#22302a; }
+html[data-theme="dark"] select.input{
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b9a92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+html[data-theme="dark"] *::-webkit-scrollbar-thumb{ background:#33443b; background-clip:content-box; }
+/* Printed transcript always stays light */
+@media print{ html[data-theme="dark"] .doc{ background:#fff; color:#000; } }
 </style>
 </head>
 <body>
@@ -880,6 +959,7 @@ table.doc-t tfoot td{ font-weight:700; background:#f2f6f4; }
       <button class="iconbtn" id="stuMenu" aria-label="Open navigation menu"><span class="i" data-i="menu"></span></button>
       <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL Portal</b><small>Student</small></div></div>
       <div class="top-space"></div>
+      <button class="iconbtn" id="stuTheme" aria-label="Switch theme"></button>
       <button class="iconbtn bell" id="stuBell" aria-label="Notifications"><span class="i" data-i="bell"></span><span class="dot" id="stuBadge" hidden>0</span></button>
       <img class="avatar" id="stuAvatar" src="logo.png" alt="Your passport photograph" />
     </header>
@@ -917,6 +997,7 @@ table.doc-t tfoot td{ font-weight:700; background:#f2f6f4; }
       <button class="iconbtn" id="admMenu" aria-label="Open navigation menu"><span class="i" data-i="menu"></span></button>
       <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL Console</b><small>Administrator</small></div></div>
       <div class="top-space"></div>
+     <button class="iconbtn" id="admTheme" aria-label="Switch theme"></button> 
       <button class="iconbtn bell" id="admBell" aria-label="Console activity"><span class="i" data-i="bell"></span><span class="dot" id="admBadge" hidden>0</span></button>
       <button class="iconbtn" id="admLogout" aria-label="Sign out"><span class="i" data-i="power"></span></button>
     </header>
@@ -1489,8 +1570,7 @@ function setLoginMode(mode){
   $('#loginNotice').innerHTML = isAdmin
     ? `<div class="notice red">${I('alert-triangle')}<span><b>This portal is restricted to administrators only.</b> Unauthorised access is an offence and all activity on this console is logged.</span></div>` : '';
   $('#demoHint').innerHTML = isAdmin
-    ? `<b>Demo credentials</b> — Username <span class="mono">admin</span> · Password <span class="mono">ibbul2025</span>`
-    : `<b>Demo credentials</b> — <span class="mono">U25/FPY/CSC/1100</span> · <span class="mono">Ibbul@1100</span>`;
+    
   $('#adminModeLabel').textContent = isAdmin ? 'Student Login' : 'Continue as Admin';
   $('#loginErr').textContent = ''; $('#fUser').value = ''; $('#fPass').value = '';
 }
@@ -2787,6 +2867,33 @@ function aReports(host){
   // Deep link: index.html#verify=TOKEN opens the verification page directly.
   if (/verify=/.test(location.hash)) routeHash();
 })();
+/* ---------------------------------------------------- 14. THEME TOGGLE ---- */
+ICONS['sun']  = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>';
+ICONS['moon'] = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
+
+function applyTheme(){
+  const dark = DB.settings.theme === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#0d1411' : '#0b5d3b');
+  ['#stuTheme', '#admTheme'].forEach(sel => {
+    const b = $(sel); if (!b) return;
+    b.innerHTML = I(dark ? 'sun' : 'moon');
+    b.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    b.setAttribute('aria-label', b.title);
+  });
+  chartJobs.forEach(f => { try { f(); } catch (e){} });
+}
+function toggleTheme(){
+  DB.settings.theme = DB.settings.theme === 'dark' ? 'light' : 'dark';
+  saveDB(); applyTheme();
+  toast(DB.settings.theme === 'dark' ? 'Dark mode enabled.' : 'Light mode enabled.', 'ok');
+}
+if (!DB.settings.theme){
+  DB.settings.theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  saveDB();
+}
+['#stuTheme', '#admTheme'].forEach(sel => { const b = $(sel); if (b) b.onclick = toggleTheme; });
+applyTheme();
 </script>
 </body>
 </html>
