@@ -868,6 +868,39 @@ html[data-theme="dark"] select.input{
 html[data-theme="dark"] *::-webkit-scrollbar-thumb{ background:#33443b; background-clip:content-box; }
 /* Printed transcript always stays light */
 @media print{ html[data-theme="dark"] .doc{ background:#fff; color:#000; } }
+/* ==========================================================================
+   TOPBAR CROWDING FIX (theme button vs brand text on small screens)
+   ========================================================================== */
+.topbar{ flex-wrap:nowrap; }
+.topbar .brand{ flex:1 1 auto; min-width:0; overflow:hidden; }
+.topbar .brand > div{ min-width:0; }
+.topbar .brand b,
+.topbar .brand small{
+  display:block; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.topbar .top-space{ flex:0 0 0; margin-left:auto; }
+.topbar .iconbtn,
+.topbar .avatar,
+.topbar .brand img{ flex:0 0 auto; }
+
+@media (max-width:560px){
+  .topbar{ gap:.35rem; padding-left:.55rem; padding-right:.55rem; }
+  .topbar .iconbtn{ width:40px; height:40px; border-radius:11px; }
+  .topbar .iconbtn .ico{ width:1.05em; height:1.05em; }
+  .topbar .avatar{ width:36px; height:36px; }
+  .topbar .brand img{ width:31px; height:31px; }
+  .topbar .brand b{ font-size:.84rem; line-height:1.1; }
+  .topbar .brand small{ font-size:.62rem; letter-spacing:.05em; }
+}
+@media (max-width:440px){
+  .topbar .brand small{ display:none; }          /* drop "Administrator" / "Student" */
+  .topbar .brand b{ font-size:.8rem; }
+}
+@media (max-width:370px){
+  .topbar .brand > div{ display:none; }          /* crest only, buttons keep breathing room */
+  .topbar .iconbtn{ width:38px; height:38px; }
+}
 </style>
 </head>
 <body>
@@ -995,7 +1028,7 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb{ background:#33443b; backgrou
   <div class="app">
     <header class="topbar admin">
       <button class="iconbtn" id="admMenu" aria-label="Open navigation menu"><span class="i" data-i="menu"></span></button>
-      <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL Console</b><small>Administrator</small></div></div>
+      <div class="brand"><img src="logo.png" alt="" /><div><b>IBBUL ADMIN</b><small>Administrator</small></div></div>
       <div class="top-space"></div>
      <button class="iconbtn" id="admTheme" aria-label="Switch theme"></button> 
       <button class="iconbtn bell" id="admBell" aria-label="Console activity"><span class="i" data-i="bell"></span><span class="dot" id="admBadge" hidden>0</span></button>
@@ -2894,6 +2927,332 @@ if (!DB.settings.theme){
 }
 ['#stuTheme', '#admTheme'].forEach(sel => { const b = $(sel); if (b) b.onclick = toggleTheme; });
 applyTheme();
+/* ============================================================ 15. PHOTOS ====
+   Ownership moves to the student. Admin manages records only.
+   ========================================================================== */
+const PHOTO_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+function studentPhotoDialog(){
+  const st = CURRENT; if (!st) return;
+  let pending = st.photo || null, cleared = false;
+  openModal({ title:'Change profile picture', icon:'camera', body:`
+    <div class="center" style="margin-bottom:1rem"><div id="spPrev" style="display:inline-block">${imgTag(st, 'thumb lg')}</div></div>
+    <div class="field"><label for="spFile">Select a photograph</label>
+      <input class="input" id="spFile" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" /></div>
+    <p class="hint">Accepted formats: <b>JPG, JPEG, PNG</b>. The image is resized to 420px and compressed automatically before being saved to this device.</p>
+    <div class="btn-row" style="margin:.8rem 0">
+      <button class="btn sm ghost" type="button" id="spPick">${I('upload')} Choose file</button>
+      <button class="btn sm ghost danger" type="button" id="spRemove">${I('trash')} Remove picture</button></div>
+    <div class="notice info">${I('info')}<span>Your photograph is the only detail you may change. Name, matric number, department, faculty, level and results remain under the control of the Registry.</span></div>
+    <div class="err" id="spErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:'Save picture', cls:'', icon:'save', onClick:save }] });
+
+  const preview = src => { $('#spPrev').innerHTML = src
+    ? `<img class="thumb lg" src="${esc(src)}" alt="Preview of your new profile picture" />`
+    : `<div class="thumb lg avatar-fallback">${esc(initialsOf(st.name))}</div>`; };
+  $('#spPick').onclick = () => $('#spFile').click();
+  $('#spFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const err = $('#spErr'); err.textContent = '';
+    const okExt = /\.(jpe?g|png)$/i.test(f.name);
+    if (!PHOTO_TYPES.includes(f.type) && !okExt){ e.target.value = ''; return err.textContent = 'Only JPG, JPEG and PNG images are accepted.'; }
+    if (f.size > 8 * 1024 * 1024){ e.target.value = ''; return err.textContent = 'That file is larger than 8 MB. Choose a smaller image.'; }
+    try { pending = await compressImage(f); cleared = false; preview(pending); }
+    catch (ex){ err.textContent = ex.message || 'Could not read that image.'; }
+  };
+  $('#spRemove').onclick = () => { pending = null; cleared = true; preview(null); };
+  function save(){
+    st.photo = pending || null;
+    if (cleared) st.photoFile = null;
+    st.photoUpdated = nowStr();
+    if (!saveDB()) return;
+    notify(st, 'security', pending ? 'Profile picture updated' : 'Profile picture removed',
+      `You ${pending ? 'updated' : 'removed'} your profile picture on ${nowStr()}.`);
+    saveDB(); closeModal();
+    syncStudentChrome();               // topbar + sidebar
+    renderStudent('profile', true);    // profile, dashboard strip, transcripts, everywhere
+    toast(pending ? 'Profile picture updated.' : 'Profile picture removed.', 'ok');
+  }
+}
+
+/* Student Profile — adds the picture card, everything else stays read-only. */
+vProfile = function (host){
+  const st = CURRENT, t = latestTerm(st);
+  const row = (k, v) => `<div class="kv"><span>${k}</span><b>${esc(v)}</b></div>`;
+  host.innerHTML = pageHead('Profile', 'Your official student record as held by the University.',
+    `<span class="pill grey">${I('lock')} Registry controlled</span>`) + profileStrip(st) + `
+    <div class="grid g-2">
+      <div class="card"><div class="card-h"><h3>Profile Picture</h3><span class="pill">${I('camera')} You control this</span></div>
+        <div class="spread" style="gap:1rem;align-items:center">
+          <div>${imgTag(st, 'thumb lg')}</div>
+          <div style="flex:1 1 200px">
+            <p class="hint">${st.photoUpdated ? 'Last updated ' + esc(st.photoUpdated) + '.' : 'No photograph uploaded yet.'}</p>
+            <button class="btn" id="pPhoto">${I('camera')} Change Profile Picture</button>
+            <p class="hint mb0" style="margin-top:.5rem">JPG, JPEG or PNG. Updates instantly across the portal.</p>
+          </div></div></div>
+      <div class="card"><div class="card-h"><h3>Biodata</h3></div>
+        ${row('Full Name', st.name)}${row('Matric Number', st.matric)}${row('Faculty', st.faculty)}
+        ${row('Department', st.department)}${row('Level', st.level + ' Level')}${row('Year of Entry', st.entryYear)}
+        ${row('E-mail', st.email)}${row('Phone', st.phone)}
+        <div class="notice" style="margin-top:1rem">${I('lock')}<span>Your name, matric number, department, faculty, level and results are maintained by the Registry and <b>cannot be edited by students</b>. Report any discrepancy to the Faculty Officer.</span></div></div>
+    </div>
+    <div class="grid g-2 mt1">
+      <div class="card"><div class="card-h"><h3>Academic Status</h3></div>
+        ${row('Current GPA', nf(gpaNow(st)))}${row('Cumulative GPA', nf(cgpaOf(st)))}
+        ${row('Credit Units Earned', t ? t.cumUnit : 0)}${row('Classification', classify(cgpaOf(st)))}
+        ${row('Academic Standing', standing(cgpaOf(st)))}</div>
+      <div class="card"><div class="card-h"><h3>Security</h3></div>
+        <p class="hint">Keep your password private. The ICT Directorate will never ask for it.</p>
+        <button class="btn" id="pChange">${I('key')} Change Password</button></div>
+    </div>`;
+  $('#pPhoto').onclick = studentPhotoDialog;
+  $('#pChange').onclick = changePasswordDialog;
+};
+
+/* Admin: picture controls removed — records management only. */
+aStudents = function (host){
+  host.innerHTML = backBtn('Back to dashboard') + `
+    <div class="page-title"><div><h2>Manage Students</h2><p>Create accounts, assign matric numbers and default passwords, and manage records.</p></div>
+      <button class="btn" id="sAdd">${I('plus')} Add Student</button></div>
+    <div class="notice info">${I('info')}<span>Profile photographs are uploaded by students themselves from their Profile page. Administrators manage identity, courses, results and announcements.</span></div>
+    <div class="card">
+      <div class="toolbar">
+        <div class="field" style="flex:2 1 240px"><label for="sQ">Search students</label>
+          <input class="input" id="sQ" placeholder="Name or matric number…" /></div>
+        <div class="field"><label for="sLvl">Level</label><select class="input" id="sLvl"><option value="">All levels</option>${[100,200,300,400].map(l => `<option>${l}</option>`).join('')}</select></div>
+      </div><div id="sTable"></div></div>`;
+  const paint = () => {
+    const q = $('#sQ').value.trim().toLowerCase(), lv = $('#sLvl').value;
+    const list = DB.students.filter(s => (!lv || String(s.level) === lv) &&
+      (!q || s.name.toLowerCase().includes(q) || s.matric.toLowerCase().includes(q)));
+    $('#sTable').innerHTML = !list.length ? '<div class="empty">No student matches your search.</div>' : `
+      <div class="tablewrap"><table class="rt"><thead><tr><th>Photo</th><th>Student</th><th>Level</th><th class="num">CGPA</th><th>Class</th><th>Actions</th></tr></thead>
+      <tbody>${list.map(s => `<tr>
+        <td data-l="Photo">${imgTag(s, 'thumb')}</td>
+        <td data-l="Student" class="full"><b>${esc(s.name)}</b><br /><small class="mono hint">${esc(s.matric)}</small></td>
+        <td data-l="Level">${esc(s.level)}L</td>
+        <td data-l="CGPA" class="num"><b>${nf(cgpaOf(s))}</b></td>
+        <td data-l="Class"><span class="pill ${cgpaOf(s) >= 4.5 ? '' : 'grey'}">${shortClass(cgpaOf(s))}</span></td>
+        <td data-l="Actions"><div class="btn-row">
+          <button class="btn sm ghost" data-edit="${esc(s.matric)}">${I('pencil')} Edit</button>
+          <button class="btn sm gold" data-res="${esc(s.matric)}">${I('clipboard-list')} Result</button>
+          <button class="btn sm ghost danger" data-del="${esc(s.matric)}">${I('trash')} Delete</button></div></td></tr>`).join('')}</tbody></table></div>
+      <p class="hint mt1 mb0">${list.length} of ${DB.students.length} records shown.</p>`;
+    paintIcons($('#sTable'));
+    $$('[data-edit]').forEach(b => b.onclick = () => studentDialog(findStudent(b.dataset.edit)));
+    $$('[data-res]').forEach(b => b.onclick = () => resultDialog(findStudent(b.dataset.res)));
+    $$('[data-del]').forEach(b => b.onclick = () => { const s = findStudent(b.dataset.del);
+      confirmModal({ title:'Delete student', message:`Permanently delete <b>${esc(s.name)}</b> (${esc(s.matric)}) and all associated results? This cannot be undone.`,
+        confirmLabel:'Delete permanently', onYes(){ DB.students = DB.students.filter(x => x.matric !== s.matric);
+          logAdmin('Student deleted', `${s.name} (${s.matric}) removed from the register.`); saveDB(); paint(); toast('Student record deleted.', 'ok'); } }); });
+  };
+  $('#sQ').oninput = paint; $('#sLvl').onchange = paint; $('#sAdd').onclick = () => studentDialog(null);
+  paint();
+};
+
+/* Admin student dialog — identity and credentials only, no photo controls. */
+studentDialog = function (st){
+  const isNew = !st;
+  openModal({ title:isNew ? 'Add new student' : 'Edit student record', icon:isNew ? 'plus' : 'pencil', wide:true, body:`
+    <div class="grid g-2">
+      <div class="field"><label for="fdMat">Matric Number</label><input class="input" id="fdMat" value="${esc(st ? st.matric : 'U25/FPY/CSC/')}" ${isNew ? '' : 'readonly'} /></div>
+      <div class="field"><label for="fdName">Full Name</label><input class="input" id="fdName" value="${esc(st ? st.name : '')}" placeholder="Surname First Middle" /></div>
+      <div class="field"><label for="fdPass">${isNew ? 'Default Password' : 'Reset Password (optional)'}</label>
+        <input class="input" id="fdPass" value="${isNew ? 'Ibbul@2025' : ''}" placeholder="${isNew ? '' : 'Leave blank to keep current'}" /></div>
+      <div class="field"><label for="fdLvl">Level</label><select class="input" id="fdLvl">${[100,200,300,400].map(l => `<option ${st && st.level == l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label for="fdDept">Department</label><input class="input" id="fdDept" value="${esc(st ? st.department : DEPARTMENT)}" /></div>
+      <div class="field"><label for="fdFac">Faculty</label><input class="input" id="fdFac" value="${esc(st ? st.faculty : FACULTY)}" /></div>
+      <div class="field"><label for="fdMail">E-mail</label><input class="input" id="fdMail" type="email" value="${esc(st ? st.email : '')}" /></div>
+      <div class="field"><label for="fdPhone">Phone</label><input class="input" id="fdPhone" value="${esc(st ? st.phone : '')}" /></div>
+    </div>
+    <div class="notice info">${I('info')}<span>${isNew
+      ? 'The student must change this default password at first login. Their profile photograph is uploaded by the student from their own Profile page.'
+      : 'Resetting the password forces the student to choose a new one at their next login. Photographs are managed by the student.'}</span></div>
+    <div class="err" id="fdErr" role="alert"></div>`,
+    actions:[{ label:'Cancel', cls:'ghost' }, { label:isNew ? 'Create student' : 'Save changes', cls:'', icon:'save', onClick:save }] });
+  function save(){
+    const mat = $('#fdMat').value.trim().toUpperCase(), name = $('#fdName').value.trim(), er = $('#fdErr');
+    if (!mat || !name) return er.textContent = 'Matric number and full name are required.';
+    if (isNew && findStudent(mat)) return er.textContent = 'That matric number already exists.';
+    const pass = $('#fdPass').value.trim();
+    if (isNew && pass.length < 6) return er.textContent = 'Default password must be at least 6 characters.';
+    if (isNew){
+      const ns = { matric:mat, name, password:pass, mustChange:true,
+        faculty:$('#fdFac').value.trim(), department:$('#fdDept').value.trim(), level:Number($('#fdLvl').value),
+        photo:null, photoFile:null, photoUpdated:null,
+        email:$('#fdMail').value.trim(), phone:$('#fdPhone').value.trim(), entryYear:new Date().getFullYear(),
+        results:{}, notifications:[], calcSaves:[] };
+      notify(ns, 'security', 'Welcome to the IBBUL Portal', 'Your account has been created. Change your default password and upload your profile picture from the Profile page.');
+      DB.students.push(ns);
+      logAdmin('Student created', `${name} (${mat}) added to the register.`);
+    } else {
+      st.name = name; st.level = Number($('#fdLvl').value); st.department = $('#fdDept').value.trim();
+      st.faculty = $('#fdFac').value.trim(); st.email = $('#fdMail').value.trim(); st.phone = $('#fdPhone').value.trim();
+      if (pass){ st.password = pass; st.mustChange = true;
+        notify(st, 'security', 'Password reset by administrator', 'A temporary password was issued. You must change it at your next login.'); }
+      logAdmin('Student updated', `${st.name} (${st.matric}) record was modified.`);
+    }
+    if (!saveDB()) return;
+    closeModal();
+    if (!isNew && CURRENT && CURRENT.matric === st.matric){ syncStudentChrome(); renderStudent(STU_VIEW, true); }
+    renderAdmin('students');
+    toast(isNew ? 'Student account created.' : 'Student record updated.', 'ok');
+  }
+};
+/* ================================================== 16. AI ASSISTANT v2 ====
+   Portal-restricted, student-aware, conversational. UI unchanged.
+   ========================================================================== */
+const AI = {
+  memory: [],          // rolling conversation for the open session
+  lastTopic: null,
+  reset(){ this.memory = []; this.lastTopic = null; }
+};
+const CHIPS = {
+  default: ['View my results', 'Check my GPA', 'Check my CGPA', 'My registered courses', 'Print my result', 'Help'],
+  results: ['Print my result', 'Verify my result', 'What is my CGPA?', 'My academic standing'],
+  cgpa:    ['How is CGPA calculated?', 'Am I eligible for graduation?', 'Use the CGPA Calculator', 'My classification'],
+  profile: ['What is my matric number?', 'What level am I?', 'Change my profile picture', 'Change my password'],
+  help:    ['How do I check my result?', 'How do I print my result?', 'What is QR Verification?', 'How do I contact the admin?']
+};
+function firstName(){ return CURRENT ? CURRENT.name.split(' ')[0] : 'there'; }
+function currentTermRows(){ const t = latestTerm(CURRENT); return t ? t.rows : []; }
+function courseListText(){
+  const t = latestTerm(CURRENT);
+  if (!t) return `No courses have been published for you yet, ${firstName()}.`;
+  const lines = t.rows.map(r => `• ${r.code} — ${r.title} (${r.unit} units, grade ${r.grade})`).join('\n');
+  return `You registered **${t.rows.length} courses** totalling **${t.unit} credit units** in ${t.session} ${t.semester} Semester:\n${lines}`;
+}
+function graduationText(){
+  const t = latestTerm(CURRENT);
+  const units = t ? t.cumUnit : 0, need = 120, c = cgpaOf(CURRENT);
+  const fails = termsOf(CURRENT).flatMap(x => x.rows).filter(r => r.grade === 'F');
+  const ok = units >= need && c >= 1 && !fails.length;
+  return `Graduation check for **${CURRENT.name}**:\n• Credit units earned: **${units}** of a minimum **${need}**\n• CGPA: **${nf(c)}** (${classify(c)})\n• Outstanding carry-overs: **${fails.length}**\n\n${ok
+    ? 'You currently meet the graduation requirements. Well done.'
+    : `You are **not yet eligible** — ${units < need ? `you still need ${need - units} more credit units` : ''}${units < need && fails.length ? ' and ' : ''}${fails.length ? `you must clear ${fails.length} carry-over course${fails.length === 1 ? '' : 's'}` : ''}${units >= need && !fails.length ? 'your CGPA must reach at least 1.00' : ''}.`}`;
+}
+const AI_SECURITY = [/\bmy password\b/, /\bpassword\b.*\b(is|what|show|tell|reveal|give)\b/, /\b(show|tell|give|reveal)\b.*\bpassword/,
+  /admin(istrator)?\s*(password|login|credential)/, /every(one|body)'?s?\s*password/, /\bdatabase\b/, /\bhack\b/, /\bbypass\b/,
+  /other\s*student'?s?\s*(result|record|password)/, /someone\s*else'?s?/, /change\s*my\s*(grade|result|cgpa|gpa)/, /upgrade\s*my\s*(cgpa|gpa|grade)/];
+const AI_INTENTS = [
+  { id:'greet', chips:'default', test:q => /^(hi|hey|hello|yo|salam|salaam|assalam[ou]?\s*alaikum|good\s*(morning|afternoon|evening|day)|how\s*(are|far)\s*(you|u)?)\b/.test(q),
+    reply:q => { const h = new Date().getHours(); const part = /morning/.test(q) ? 'Good morning' : /afternoon/.test(q) ? 'Good afternoon' : /evening/.test(q) ? 'Good evening' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+      return `${part}, **${firstName()}** — welcome back to the IBBUL Result Checker Portal. How can I assist you today?`; } },
+  { id:'thanks', chips:'default', test:q => /\b(thanks|thank you|thx|jazakallah|well done|nice one)\b/.test(q),
+    reply:() => `You're very welcome, ${firstName()}. Is there anything else you'd like to check?` },
+  { id:'bye', chips:'default', test:q => /\b(bye|goodbye|see you|good night|later)\b/.test(q),
+    reply:() => `Goodbye, ${firstName()}. Best wishes with your studies — remember to log out when you're done.` },
+  { id:'name', chips:'profile', test:q => /(what('?s| is)?\s*my\s*name|who am i)/.test(q),
+    reply:() => `Your name on the University register is **${CURRENT.name}**.` },
+  { id:'matric', chips:'profile', test:q => /(matric|registration|reg)\s*(number|no)/.test(q),
+    reply:() => `Your matriculation number is **${CURRENT.matric}**.` },
+  { id:'dept', chips:'profile', test:q => /(what|which)?\s*(department|dept|faculty|course of study)/.test(q),
+    reply:() => `You are in the **Department of ${CURRENT.department}**, **${CURRENT.faculty}**.` },
+  { id:'level', chips:'profile', test:q => /(what|which)?\s*level/.test(q),
+    reply:() => `You are currently in **${CURRENT.level} Level**, ${CURRENT.department} Department.` },
+  { id:'courses', chips:'results', test:q => /(course|subject)s?\b.*(register|offer|taking|doing|semester|many)|(how many|what)\s*(course|subject)/.test(q),
+    reply:() => courseListText() },
+  { id:'units', chips:'cgpa', test:q => /(credit\s*unit|how many units|total units)/.test(q),
+    reply:() => { const t = latestTerm(CURRENT); return t ? `You have earned **${t.cumUnit} credit units** in total, with **${t.unit} units** registered in ${t.session} ${t.semester} Semester.` : 'No credit units have been recorded yet.'; } },
+  { id:'gpa', chips:'cgpa', test:q => /\bgpa\b/.test(q) && !/cgpa/.test(q),
+    reply:() => { const t = latestTerm(CURRENT); return t ? `Your GPA for ${t.session} ${t.semester} Semester is **${nf(t.gpa)}** on a 5.00 scale, from ${t.unit} credit units.` : 'No semester GPA has been published yet.'; } },
+  { id:'cgpa', chips:'cgpa', test:q => /\bcgpa\b|cumulative/.test(q),
+    reply:() => `Your cumulative grade point average is **${nf(cgpaOf(CURRENT))}** out of 5.00 — that is a **${classify(cgpaOf(CURRENT))}**.` },
+  { id:'standing', chips:'cgpa', test:q => /(academic\s*standing|how am i doing|my performance|classification|what class)/.test(q),
+    reply:() => `Academic standing for **${CURRENT.name}**: **${standing(cgpaOf(CURRENT))}**\n• CGPA: **${nf(cgpaOf(CURRENT))}**\n• Classification: **${classify(cgpaOf(CURRENT))}**\n• Level: **${CURRENT.level} Level**` },
+  { id:'graduate', chips:'cgpa', test:q => /(graduat|eligible|finish|complete my (degree|programme))/.test(q), reply:() => graduationText() },
+  { id:'myresult', chips:'results', test:q => /(view|see|show|check|open)\s*(my)?\s*result|my result|latest result/.test(q),
+    reply:() => { const t = latestTerm(CURRENT); return t
+      ? `Your most recent published result is **${t.session} ${t.semester} Semester** — GPA **${nf(t.gpa)}**, CGPA **${nf(t.cgpa)}**, ${t.rows.length} courses, ${t.unit} credit units.\nOpen **My Results** from the menu to view the full breakdown, or print it as an official statement.`
+      : 'No result has been published for you yet. You will receive a notification as soon as the Examinations Office releases one.'; } },
+  { id:'howresult', chips:'help', test:q => /how.*(check|view|see).*(result)/.test(q),
+    reply:() => 'Open the menu, choose **My Results**, select your **Session** and **Semester**, then tap **View Result**. Each course shows its code, credit units, grade and remark, followed by your semester GPA, CGPA and classification.' },
+  { id:'print', chips:'results', test:q => /(print|pdf|download|transcript|statement of result)/.test(q),
+    reply:() => 'Go to **My Results**, choose the session and semester, then tap **Print** for the official transcript layout or **Download PDF** and select *Save as PDF* as your printer destination. Every printout carries the University seal, the Registrar\'s signature and a QR verification code.' },
+  { id:'calc', chips:'cgpa', test:q => /(cgpa calculator|calculator|how.*calculat|compute.*(gpa|cgpa)|predict)/.test(q),
+    reply:() => 'GPA = total grade points ÷ total credit units on a 5.00 scale (A=5, B=4, C=3, D=2, E=1, F=0). CGPA combines every semester.\nOpen **CGPA Calculator** from the menu, enter each course with its units and expected grade for both semesters, and the semester GPA, year GPA, overall CGPA and classification are computed instantly. **CGPA Studio** shows your trend and predicts what you need for a First Class.' },
+  { id:'qr', chips:'help', test:q => /(qr|verify|verification|authentic|genuine|fake)/.test(q),
+    reply:() => 'Every printed result carries a **QR verification code**. Scanning it — or tapping **Verify** in the result viewer — opens a verification page showing the student name, matric number, CGPA, session, classification and the date the document was generated, confirming it was issued by the Examinations Office.' },
+  { id:'notif', chips:'help', test:q => /(notification|alert|announcement|news|bell)/.test(q),
+    reply:() => { const u = unreadOf(CURRENT); return `Tap the **bell** in the top bar or choose **Notifications** from the menu. You currently have **${u}** unread notification${u === 1 ? '' : 's'}. University announcements from the Registry appear at the bottom of the same page.`; } },
+  { id:'password', chips:'profile', test:q => /(change|update|reset).*(password)|password.*(change|reset)/.test(q),
+    reply:() => 'Go to **Profile → Change Password** (also available in Settings). Enter your current password, then a new one of at least 6 characters. At first login the portal requires you to replace the default password issued by the ICT Directorate.' },
+  { id:'photo', chips:'profile', test:q => /(profile picture|photo|passport|picture|avatar|display picture|dp)/.test(q),
+    reply:() => 'Open **Profile** and tap **Change Profile Picture**. Choose a JPG, JPEG or PNG image, preview it, then save — it updates instantly across your dashboard, sidebar, result viewer and printed transcript. Your photograph is the only detail you can change yourself.' },
+  { id:'editinfo', chips:'profile', test:q => /(change|edit|update).*(name|matric|department|faculty|level|result|grade|cgpa)/.test(q),
+    reply:() => 'Your name, matric number, department, faculty, level and results are maintained by the Registry and cannot be edited from the student portal. If any detail is wrong, contact your Faculty Officer or the Directorate of ICT with evidence.' },
+  { id:'contact', chips:'help', test:q => /(contact|admin|support|help desk|ict|office|complain)/.test(q),
+    reply:() => 'For account, result or record issues contact the **Directorate of ICT**, Admin Block Room 12, or e-mail **ict@ibbul.edu.ng** quoting your matric number. Result corrections go through your **Faculty Officer**.' },
+  { id:'nav', chips:'help', test:q => /(navigate|menu|sidebar|where is|how do i (get|go)|back button)/.test(q),
+    reply:() => 'Tap the **Menu** button at the top-left for the sidebar: Dashboard, My Results, CGPA Studio, CGPA Calculator, Notifications, Profile, AI Assistant, Settings and Logout. Every page also has a **Back** button at the top, and I stay one tap away from the floating button at the bottom-right.' },
+  { id:'carry', chips:'cgpa', test:q => /(carry ?over|fail|failed|\bf grade\b|repeat|resit)/.test(q),
+    reply:() => { const f = termsOf(CURRENT).flatMap(t => t.rows).filter(r => r.grade === 'F');
+      return f.length ? `You have **${f.length} carry-over course${f.length === 1 ? '' : 's'}**: ${f.map(r => r.code).join(', ')}. Each carries 0 grade points until repeated and passed, which depresses your CGPA.`
+        : `Good news, ${firstName()} — you have **no carry-over courses**. Every registered course has been passed.`; } },
+  { id:'help', chips:'default', test:q => /^(help|menu|options|what can you do|commands)\b/.test(q),
+    reply:() => `I'm the IBBUL Portal Assistant, ${firstName()}. I can help you with:\n• Viewing, printing and verifying results\n• GPA, CGPA, credit units and classification\n• Your registered courses and academic standing\n• Profile details, profile picture and password\n• Notifications, announcements and navigation\n\nPick a suggestion below or type your question.` }
+];
+function aiRespond(raw){
+  const q = String(raw || '').toLowerCase().trim();
+  if (!q) return { text:'Please type a question and I will do my best to help.', chips:'default' };
+  if (AI_SECURITY.some(re => re.test(q)))
+    return { text:"I'm sorry, but for security reasons I cannot access or reveal passwords, administrator credentials or confidential system information. If you have forgotten your password, contact the Directorate of ICT at **ict@ibbul.edu.ng**.", chips:'profile' };
+  if (!CURRENT) return { text:'Please sign in first so I can access your academic record.', chips:'default' };
+  for (const it of AI_INTENTS){
+    if (it.test(q)){ AI.lastTopic = it.id; return { text:it.reply(q), chips:it.chips }; }
+  }
+  if (/^(yes|yeah|ok|okay|sure|please)\b/.test(q) && AI.lastTopic){
+    const prev = AI_INTENTS.find(i => i.id === AI.lastTopic);
+    if (prev) return { text:prev.reply(q), chips:prev.chips };
+  }
+  return { text:"I'm not sure about that. I can help with questions related to the IBBUL Result Checker Portal — results, GPA and CGPA, registered courses, profile information, printing, QR verification and portal navigation.", chips:'help' };
+}
+
+/* Same chat UI, upgraded behaviour. */
+vAssistant = function (host){
+  AI.reset();
+  host.innerHTML = `<div class="page-title"><div><h2>AI Assistant</h2><p>Portal guidance, result help and CGPA explanations.</p></div><span class="pill">${I('bot')} Online</span></div>
+    <div class="chat">
+      <div class="chat-head">
+        <button class="backbtn on-dark" data-back="1" style="margin:0;min-height:38px;padding:.32rem .8rem">${I('arrow-left')}<span>Back</span></button>
+        <div class="avatar-ai">${I('bot')}</div>
+        <div style="min-width:0"><b>IBBUL Portal Assistant</b><small>Answers questions about this portal only</small></div>
+        <span class="live"><i></i> Live</span>
+      </div>
+      <div class="chat-body" id="chatBody"></div>
+      <div class="chips" id="chips"></div>
+      <form class="chat-in" id="chatForm"><input class="input" id="chatIn" placeholder="Ask about results, CGPA, courses…" autocomplete="off" aria-label="Message" />
+        <button class="btn" type="submit" aria-label="Send">${I('send')}</button></form>
+    </div>`;
+  const body = $('#chatBody'), chips = $('#chips');
+  const fmt = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br />');
+  const add = (who, text) => {
+    const d = document.createElement('div'); d.className = 'msg ' + who;
+    d.innerHTML = (who === 'me' ? esc(text) : fmt(text)) +
+      `<span class="t">${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>`;
+    body.appendChild(d); body.scrollTop = body.scrollHeight;
+    AI.memory.push({ who, text }); if (AI.memory.length > 40) AI.memory.shift();
+  };
+  const setChips = key => {
+    chips.innerHTML = '';
+    (CHIPS[key] || CHIPS.default).forEach(c => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = c;
+      b.onclick = () => ask(c); chips.appendChild(b);
+    });
+    chips.scrollLeft = 0;
+  };
+  const ask = q => {
+    add('me', q);
+    const t = document.createElement('div'); t.className = 'msg bot';
+    t.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+    body.appendChild(t); body.scrollTop = body.scrollHeight;
+    const r = aiRespond(q);
+    setTimeout(() => { t.remove(); add('bot', r.text); setChips(r.chips); }, 540 + Math.min(900, r.text.length * 5));
+  };
+  $('#chatForm').onsubmit = e => { e.preventDefault(); const v = $('#chatIn').value.trim(); if (!v) return; $('#chatIn').value = ''; ask(v); };
+  setChips('default');
+  setTimeout(() => add('bot', `Hello, **${firstName()}** — welcome back to the IBBUL Result Checker Portal. I can check your results, GPA, CGPA, registered courses and academic standing, or guide you around the portal. How can I assist you today?`), 320);
+};
 </script>
 </body>
 </html>
